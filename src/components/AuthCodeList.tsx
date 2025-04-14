@@ -1,3 +1,16 @@
+/**
+ * 인증 코드 목록 컴포넌트
+ * 인증 코드의 생성, 조회, 수정, 삭제 기능을 제공합니다.
+ * 
+ * 주요 기능:
+ * - 코드 생성: 단일 또는 대량 생성 지원
+ * - 코드 검색: 코드 또는 컨텍스트로 검색
+ * - 상태 필터링: 전체/사용됨/만료됨 상태별 필터링
+ * - 만료일 관리: 개별 코드의 만료일 수정
+ * - 대량 작업: 선택한 코드들의 일괄 삭제
+ * - 데이터 관리: 코드 목록 내보내기/가져오기
+ */
+
 'use client';
 
 import { useEffect, useState, useRef } from 'react';
@@ -45,77 +58,35 @@ interface SearchResult {
 }
 
 interface AuthCodeListProps {
-  initialCodes: AuthCode[];
+  initialCodes?: AuthCode[]
 }
 
-export default function AuthCodeList({ initialCodes }: AuthCodeListProps) {
-  const [codes, setCodes] = useState<AuthCode[]>(initialCodes);
-  const [isGenerating, setIsGenerating] = useState<boolean>(false);
-  const [isDeleting, setIsDeleting] = useState<string | null>(null);
-  const [searchTerm, setSearchTerm] = useState('');
-  const [statusFilter, setStatusFilter] = useState<'all' | 'active' | 'used' | 'expired'>('active');
-  const [copiedCode, setCopiedCode] = useState<string | null>(null);
-  const [editingContext, setEditingContext] = useState<string | null>(null);
-  const [editingExpiry, setEditingExpiry] = useState<string | null>(null);
-  const [newContext, setNewContext] = useState('');
-  const [newExpiryHours, setNewExpiryHours] = useState('24');
-  const [isUpdating, setIsUpdating] = useState<string | null>(null);
-  const [selectedCodes, setSelectedCodes] = useState<string[]>([]);
-  const [currentPage, setCurrentPage] = useState(1);
-  const [itemsPerPage] = useState(10);
-  const fileInputRef = useRef<HTMLInputElement>(null);
-  const [showGenerateModal, setShowGenerateModal] = useState(false);
-  const [generationOptions, setGenerationOptions] = useState<CodeGenerationOptions>({
-    count: 1,
-    length: 8,
-    prefix: '',
-    suffix: '',
-    expiryDate: new Date(new Date().setDate(new Date().getDate() + 1)),
-    useUppercase: true,
-    useLowercase: true,
-    useNumbers: true
-  });
-  const [loadingId, setLoadingId] = useState<string | null>(null);
-  const [totalCount, setTotalCount] = useState(0);
-  const [filteredCount, setFilteredCount] = useState(0);
-  const notification = useNotification();
-  const supabase = createClientComponentClient();
-  const [sortField, setSortField] = useState<keyof AuthCode>('created_at');
-  const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('desc');
-  const [stats, setStats] = useState({
-    total: 0,
-    active: 0,
-    used: 0,
-    expired: 0
-  });
+export default function AuthCodeList({ initialCodes = [] }: AuthCodeListProps) {
+  // 상태 관리
+  const [codes, setCodes] = useState<AuthCode[]>(initialCodes)
+  const [selectedCodes, setSelectedCodes] = useState<string[]>([])
+  const [searchTerm, setSearchTerm] = useState('')
+  const [statusFilter, setStatusFilter] = useState<'all' | 'used' | 'expired'>('all')
+  const [isGenerating, setIsGenerating] = useState(false)
+  const [isDeleting, setIsDeleting] = useState(false)
+  const [showGenerateModal, setShowGenerateModal] = useState(false)
+  const [editingExpiry, setEditingExpiry] = useState<string | null>(null)
+  const [newExpiryDate, setNewExpiryDate] = useState<Date | null>(null)
 
-  useEffect(() => {
-    fetchCodes();
-  }, [searchTerm, statusFilter, currentPage]);
+  // 페이지네이션 상태
+  const [currentPage, setCurrentPage] = useState(1)
+  const [totalCount, setTotalCount] = useState(0)
+  const [filteredCount, setFilteredCount] = useState(0)
+  const itemsPerPage = 10
 
-  useEffect(() => {
-    const channel = supabase
-      .channel('auth_codes_changes')
-      .on('postgres_changes', 
-        { 
-          event: '*', 
-          schema: 'public', 
-          table: 'auth_codes' 
-        }, 
-        () => {
-          console.log('Database change detected, refreshing data...');
-          fetchCodes();
-        }
-      )
-      .subscribe((status) => {
-        console.log('Realtime subscription status:', status);
-      });
+  // Supabase 클라이언트 및 알림 컨텍스트
+  const supabase = createClientComponentClient()
+  const notification = useNotification()
 
-    return () => {
-      channel.unsubscribe();
-    };
-  }, []);
-
+  /**
+   * 코드 목록을 조회합니다.
+   * 검색어, 상태 필터, 페이지네이션을 적용하여 데이터를 가져옵니다.
+   */
   const fetchCodes = async () => {
     try {
       setIsGenerating(true);
@@ -209,6 +180,10 @@ export default function AuthCodeList({ initialCodes }: AuthCodeListProps) {
     }
   };
 
+  /**
+   * 새로운 인증 코드를 생성합니다.
+   * 대문자, 소문자, 숫자를 조합하여 코드를 생성할 수 있습니다.
+   */
   const handleGenerateCode = async (options: CodeGenerationOptions) => {
     try {
       const codes = [];
