@@ -2,7 +2,7 @@ import { createServerActionClient } from '@supabase/auth-helpers-nextjs'
 import { cookies } from 'next/headers'
 import { NextResponse } from 'next/server'
 
-export async function POST() {
+async function handleSignOut() {
   try {
     const supabase = createServerActionClient({ cookies })
     await supabase.auth.signOut()
@@ -17,4 +17,7 @@ export async function POST() {
       { status: 301 }
     )
   }
-} 
+}
+
+export const GET = handleSignOut
+export const POST = handleSignOut 
