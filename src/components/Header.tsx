@@ -1,7 +1,22 @@
 import { Button } from '@/components/ui/button'
+import { createClientComponentClient } from '@supabase/auth-helpers-nextjs'
+import { useRouter } from 'next/navigation'
 
-<form action="/auth/signout" method="post">
-  <Button variant="ghost" size="sm">
-    로그아웃
-  </Button>
-</form> 
+export default function Header() {
+  const router = useRouter()
+  const supabase = createClientComponentClient()
+
+  const handleSignOut = async () => {
+    await supabase.auth.signOut()
+    router.push('/auth/login')
+  }
+
+  return (
+    <header className="flex h-16 items-center justify-between border-b px-4">
+      <h1 className="text-xl font-bold">인증 코드 관리</h1>
+      <Button variant="ghost" size="sm" onClick={handleSignOut}>
+        로그아웃
+      </Button>
+    </header>
+  )
+} 

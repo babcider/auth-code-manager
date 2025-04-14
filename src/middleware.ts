@@ -12,7 +12,7 @@ export async function middleware(request: NextRequest) {
   const { data: { session } } = await supabase.auth.getSession()
 
   // 인증이 필요하지 않은 경로
-  const publicPaths = ['/auth/login', '/auth/callback', '/auth/sign-in', '/auth/signout']
+  const publicPaths = ['/auth/login', '/auth/callback', '/auth/sign-in']
   const isPublicPath = publicPaths.some(path => request.nextUrl.pathname.startsWith(path))
 
   // 인증이 필요한 경로에서 세션이 없으면 로그인 페이지로 리다이렉트
