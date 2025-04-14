@@ -154,27 +154,30 @@ export default function GenerateCodeModal({ onGenerate, onClose }: GenerateCodeM
           <div className="space-y-2">
             <Label>문자 종류</Label>
             <div className="flex flex-col gap-2">
-              <div className="flex items-center gap-2">
+              <div className="flex items-center space-x-2">
                 <Checkbox
                   id="useUppercase"
                   checked={options.useUppercase}
-                  onCheckedChange={(checked) => setOptions({ ...options, useUppercase: checked as boolean })}
+                  onChange={(e: React.ChangeEvent<HTMLInputElement>) => 
+                    setOptions({ ...options, useUppercase: e.target.checked })}
                 />
                 <Label htmlFor="useUppercase">대문자 (A-Z)</Label>
               </div>
-              <div className="flex items-center gap-2">
+              <div className="flex items-center space-x-2">
                 <Checkbox
                   id="useLowercase"
                   checked={options.useLowercase}
-                  onCheckedChange={(checked) => setOptions({ ...options, useLowercase: checked as boolean })}
+                  onChange={(e: React.ChangeEvent<HTMLInputElement>) => 
+                    setOptions({ ...options, useLowercase: e.target.checked })}
                 />
                 <Label htmlFor="useLowercase">소문자 (a-z)</Label>
               </div>
-              <div className="flex items-center gap-2">
+              <div className="flex items-center space-x-2">
                 <Checkbox
                   id="useNumbers"
                   checked={options.useNumbers}
-                  onCheckedChange={(checked) => setOptions({ ...options, useNumbers: checked as boolean })}
+                  onChange={(e: React.ChangeEvent<HTMLInputElement>) => 
+                    setOptions({ ...options, useNumbers: e.target.checked })}
                 />
                 <Label htmlFor="useNumbers">숫자 (0-9)</Label>
               </div>
