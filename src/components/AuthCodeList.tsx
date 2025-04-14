@@ -61,6 +61,13 @@ interface AuthCodeListProps {
   initialCodes?: AuthCode[]
 }
 
+interface Stats {
+  total: number
+  active: number
+  used: number
+  expired: number
+}
+
 export default function AuthCodeList({ initialCodes = [] }: AuthCodeListProps) {
   // 상태 관리
   const [codes, setCodes] = useState<AuthCode[]>(initialCodes)
@@ -72,6 +79,12 @@ export default function AuthCodeList({ initialCodes = [] }: AuthCodeListProps) {
   const [showGenerateModal, setShowGenerateModal] = useState(false)
   const [editingExpiry, setEditingExpiry] = useState<string | null>(null)
   const [newExpiryDate, setNewExpiryDate] = useState<Date | null>(null)
+  const [stats, setStats] = useState<Stats>({
+    total: 0,
+    active: 0,
+    used: 0,
+    expired: 0
+  })
 
   // 페이지네이션 상태
   const [currentPage, setCurrentPage] = useState(1)
@@ -82,6 +95,15 @@ export default function AuthCodeList({ initialCodes = [] }: AuthCodeListProps) {
   // Supabase 클라이언트 및 알림 컨텍스트
   const supabase = createClientComponentClient()
   const notification = useNotification()
+
+  const [copiedCode, setCopiedCode] = useState<string | null>(null)
+  const [loadingId, setLoadingId] = useState<string | null>(null)
+  const [editingContext, setEditingContext] = useState<string | null>(null)
+  const [newContext, setNewContext] = useState<string>('')
+  const [sortField, setSortField] = useState<keyof AuthCode>('created_at')
+  const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('desc')
+
+  const fileInputRef = useRef<HTMLInputElement>(null)
 
   /**
    * 코드 목록을 조회합니다.
@@ -456,6 +478,19 @@ export default function AuthCodeList({ initialCodes = [] }: AuthCodeListProps) {
   const startIndex = (currentPage - 1) * itemsPerPage;
   const endIndex = startIndex + itemsPerPage;
   const currentCodes = getSortedCodes(filteredCodes);
+
+  useEffect(() => {
+    const active = codes.filter(code => !code.is_used && new Date(code.expires_at) > new Date()).length
+    const used = codes.filter(code => code.is_used).length
+    const expired = codes.filter(code => !code.is_used && new Date(code.expires_at) <= new Date()).length
+
+    setStats({
+      total: codes.length,
+      active,
+      used,
+      expired
+    })
+  }, [codes])
 
   return (
     <div className="space-y-4">
