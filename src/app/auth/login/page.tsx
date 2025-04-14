@@ -1,57 +1,40 @@
-'use client'
+import { createServerComponentClient } from '@supabase/auth-helpers-nextjs'
+import { cookies } from 'next/headers'
+import { redirect } from 'next/navigation'
+import { Button } from '@/components/ui/button'
 
-import { createClientComponentClient } from '@supabase/auth-helpers-nextjs'
-import { Auth } from '@supabase/auth-ui-react'
-import { ThemeSupa } from '@supabase/auth-ui-shared'
+export default async function LoginPage({
+  searchParams,
+}: {
+  searchParams: { error?: string }
+}) {
+  const supabase = createServerComponentClient({ cookies })
+  const { data: { session } } = await supabase.auth.getSession()
 
-/**
- * 로그인 페이지 컴포넌트
- * Supabase Auth UI를 사용하여 이메일/비밀번호 및 소셜 로그인 기능을 제공합니다.
- */
-export default function LoginPage() {
-  // Supabase 클라이언트 인스턴스 생성
-  const supabase = createClientComponentClient()
+  if (session) {
+    redirect('/')
+  }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50">
-      <div className="max-w-md w-full space-y-8 p-8 bg-white rounded-lg shadow">
-        <div>
-          <h2 className="mt-6 text-center text-3xl font-extrabold text-gray-900">
-            인증 코드 관리 시스템
-          </h2>
-          <p className="mt-2 text-center text-sm text-gray-600">
-            로그인하여 시작하세요
-          </p>
+    <div className="flex min-h-screen flex-col items-center justify-center gap-4 py-24">
+      <h1 className="text-2xl font-bold">로그인</h1>
+      {searchParams.error && (
+        <div className="rounded-md bg-red-50 p-4 text-sm text-red-500">
+          {searchParams.error}
         </div>
-        {/* Supabase Auth UI 컴포넌트 */}
-        <Auth
-          supabaseClient={supabase}
-          appearance={{ theme: ThemeSupa }}
-          providers={['google', 'github']}
-          localization={{
-            variables: {
-              // 로그인 폼 한글화
-              sign_in: {
-                email_label: '이메일',
-                password_label: '비밀번호',
-                button_label: '로그인',
-                loading_button_label: '로그인 중...',
-                social_provider_text: '{{provider}}로 계속하기',
-                link_text: '이미 계정이 있으신가요? 로그인하기'
-              },
-              // 회원가입 폼 한글화
-              sign_up: {
-                email_label: '이메일',
-                password_label: '비밀번호',
-                button_label: '회원가입',
-                loading_button_label: '회원가입 중...',
-                social_provider_text: '{{provider}}로 계속하기',
-                link_text: '계정이 없으신가요? 회원가입하기'
-              }
-            }
-          }}
-        />
+      )}
+      <div className="flex flex-col gap-2">
+        <form action="/auth/sign-in/kakao" method="post">
+          <Button className="w-full bg-[#FEE500] text-black hover:bg-[#FEE500]/90">
+            카카오로 로그인
+          </Button>
+        </form>
+        <form action="/auth/sign-in/google" method="post">
+          <Button className="w-full bg-white text-black hover:bg-white/90 border border-gray-300">
+            Google로 로그인
+          </Button>
+        </form>
       </div>
     </div>
   )
-} 
+}
