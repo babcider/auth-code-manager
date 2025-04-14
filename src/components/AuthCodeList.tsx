@@ -70,7 +70,7 @@ export default function AuthCodeList({ initialCodes }: AuthCodeListProps) {
     length: 8,
     prefix: '',
     suffix: '',
-    expiryHours: 24,
+    expiryDate: new Date(new Date().setDate(new Date().getDate() + 1)),
     useUppercase: true,
     useLowercase: true,
     useNumbers: true
