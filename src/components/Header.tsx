@@ -9,8 +9,12 @@ export default function Header() {
   const supabase = createClientComponentClient()
 
   const handleSignOut = async () => {
-    await supabase.auth.signOut()
-    router.push('/auth/login')
+    try {
+      await supabase.auth.signOut()
+      router.push('/auth/login')
+    } catch (error) {
+      console.error('Error signing out:', error)
+    }
   }
 
   return (
