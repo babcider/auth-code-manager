@@ -7,7 +7,7 @@
  * - 코드 검색: 코드 또는 컨텍스트로 검색
  * - 상태 필터링: 전체/사용됨/만료됨 상태별 필터링
  * - 만료일 관리: 개별 코드의 만료일 수정
- * - 대량 작업: 선택한 코드들의 일괄 삭제
+ * - 대량 작업: 선택한 코들의 일괄 삭제
  * - 데이터 관리: 코드 목록 내보내기/가져오기
  */
 
@@ -178,9 +178,17 @@ export default function AuthCodeList({ initialCodes = [] }: AuthCodeListProps) {
 
       // 전체 데이터로 통계 계산
       const allCodes = statsResult.data || [];
-      const active = allCodes.filter(code => !code.is_used && (!code.expires_at || new Date(code.expires_at) > new Date())).length;
+      const active = allCodes.filter(code => 
+        !code.is_used && 
+        code.expires_at && 
+        new Date(code.expires_at) > new Date()
+      ).length;
       const used = allCodes.filter(code => code.is_used).length;
-      const expired = allCodes.filter(code => !code.is_used && code.expires_at && new Date(code.expires_at) < new Date()).length;
+      const expired = allCodes.filter(code => 
+        !code.is_used && 
+        code.expires_at && 
+        new Date(code.expires_at) <= new Date()
+      ).length;
 
       // 현재 페이지 데이터 설정
       setCodes(pageResult.data || []);
@@ -480,17 +488,27 @@ export default function AuthCodeList({ initialCodes = [] }: AuthCodeListProps) {
   const currentCodes = getSortedCodes(filteredCodes);
 
   useEffect(() => {
-    const active = codes.filter(code => !code.is_used && new Date(code.expires_at) > new Date()).length
-    const used = codes.filter(code => code.is_used).length
-    const expired = codes.filter(code => !code.is_used && new Date(code.expires_at) <= new Date()).length
+    const active = codes.filter(code => 
+      !code.is_used && 
+      code.expires_at && 
+      new Date(code.expires_at) > new Date()
+    ).length;
+    
+    const used = codes.filter(code => code.is_used).length;
+    
+    const expired = codes.filter(code => 
+      !code.is_used && 
+      code.expires_at && 
+      new Date(code.expires_at) <= new Date()
+    ).length;
 
     setStats({
       total: codes.length,
       active,
       used,
       expired
-    })
-  }, [codes])
+    });
+  }, [codes]);
 
   return (
     <div className="space-y-4">
