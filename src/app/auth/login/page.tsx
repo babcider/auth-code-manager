@@ -38,12 +38,34 @@ export default function Login() {
           if (userError) {
             console.error('User data error:', userError)
             toast.error('사용자 정보를 가져오는데 실패했습니다.')
+            await supabase.auth.signOut()
             return
           }
 
+          // 신규 사용자인 경우
           if (!userData) {
-            console.error('User not found')
-            toast.error('사용자 정보를 찾을 수 없습니다.')
+            console.log('New user, creating record...')
+            const { error: insertError } = await supabase
+              .from('users')
+              .insert([
+                { 
+                  id: session.user.id,
+                  email: session.user.email,
+                  role: 'user',
+                  active: false, // 기본적으로 비활성 상태로 생성
+                  provider: session.user.app_metadata.provider // 로그인 제공자 정보 저장
+                }
+              ])
+
+            if (insertError) {
+              console.error('User creation error:', insertError)
+              toast.error('사용자 계정 생성에 실패했습니다.')
+              await supabase.auth.signOut()
+              return
+            }
+
+            toast.error('관리자의 승인이 필요합니다. 승인 후 로그인이 가능합니다.')
+            await supabase.auth.signOut()
             return
           }
 
