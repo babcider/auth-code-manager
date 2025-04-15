@@ -4,74 +4,71 @@ import { createClientComponentClient } from '@supabase/auth-helpers-nextjs'
 import { Auth } from '@supabase/auth-ui-react'
 import { ThemeSupa } from '@supabase/auth-ui-shared'
 import { useSearchParams } from 'next/navigation'
-import { Suspense, useEffect } from 'react'
-import { toast } from 'react-hot-toast'
+import { Suspense } from 'react'
+import { toast, Toaster } from 'react-hot-toast'
 
 // 메시지 처리를 위한 별도의 클라이언트 컴포넌트
 function MessageHandler() {
   const searchParams = useSearchParams()
-  
-  useEffect(() => {
-    const error = searchParams.get('error')
-    const message = searchParams.get('message')
+  const error = searchParams.get('error')
+  const message = searchParams.get('message')
 
-    if (error) {
-      switch (error) {
-        case 'session':
-          toast.error('로그인 세션 처리 중 오류가 발생했습니다.', {
-            duration: 5000,
-            position: 'top-center',
-          })
-          break
-        case 'user_data':
-          toast.error('사용자 정보를 가져오는데 실패했습니다.', {
-            duration: 5000,
-            position: 'top-center',
-          })
-          break
-        case 'user_creation':
-          toast.error('사용자 계정 생성에 실패했습니다.', {
-            duration: 5000,
-            position: 'top-center',
-          })
-          break
-        case 'inactive':
-          toast('계정이 아직 승인되지 않았습니다. 관리자의 승인을 기다려주세요.', {
-            duration: 6000,
-            position: 'top-center',
-            icon: '⚠️',
-            style: {
-              borderRadius: '10px',
-              background: '#333',
-              color: '#fff',
-            },
-          })
-          break
-        default:
-          toast.error('로그인 처리 중 오류가 발생했습니다.', {
-            duration: 5000,
-            position: 'top-center',
-          })
-      }
+  if (error) {
+    switch (error) {
+      case 'session':
+        toast.error('로그인 세션 처리 중 오류가 발생했습니다.', {
+          duration: 5000,
+          position: 'top-center',
+        })
+        break
+      case 'user_data':
+        toast.error('사용자 정보를 가져오는데 실패했습니다.', {
+          duration: 5000,
+          position: 'top-center',
+        })
+        break
+      case 'user_creation':
+        toast.error('사용자 계정 생성에 실패했습니다.', {
+          duration: 5000,
+          position: 'top-center',
+        })
+        break
+      case 'inactive':
+        toast('계정이 아직 승인되지 않았습니다. 관리자의 승인을 기다려주세요.', {
+          duration: 6000,
+          position: 'top-center',
+          icon: '⚠️',
+          style: {
+            borderRadius: '10px',
+            background: '#333',
+            color: '#fff',
+          },
+        })
+        break
+      default:
+        toast.error('로그인 처리 중 오류가 발생했습니다.', {
+          duration: 5000,
+          position: 'top-center',
+        })
     }
+  }
 
-    if (message === 'approval_required') {
-      toast('회원가입이 완료되었습니다! 👋', {
-        duration: 3000,
-        position: 'top-center',
-      })
-      toast('관리자 승인 후 로그인이 가능합니다. 잠시만 기다려주세요.', {
-        duration: 6000,
-        position: 'top-center',
-        icon: '🔔',
-        style: {
-          borderRadius: '10px',
-          background: '#333',
-          color: '#fff',
-        },
-      })
-    }
-  }, [searchParams])
+  if (message === 'approval_required') {
+    toast('회원가입이 완료되었습니다! 👋', {
+      duration: 3000,
+      position: 'top-center',
+    })
+    toast('관리자 승인 후 로그인이 가능합니다. 잠시만 기다려주세요.', {
+      duration: 6000,
+      position: 'top-center',
+      icon: '🔔',
+      style: {
+        borderRadius: '10px',
+        background: '#333',
+        color: '#fff',
+      },
+    })
+  }
 
   return null
 }
@@ -81,6 +78,7 @@ export default function Login() {
 
   return (
     <div className="flex min-h-screen flex-col items-center justify-center bg-gray-100">
+      <Toaster />
       <div className="w-full max-w-md rounded-lg bg-white p-8 shadow-md">
         <h2 className="mb-6 text-center text-2xl font-bold text-gray-900">로그인</h2>
         <Suspense fallback={null}>
