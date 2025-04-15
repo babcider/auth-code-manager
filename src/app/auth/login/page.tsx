@@ -113,6 +113,26 @@ export default function Login() {
     return () => clearTimeout(timer)
   }, [supabase, router])
 
+  // 로그인 시도 감지를 위한 이벤트 리스너
+  useEffect(() => {
+    const handleAuthChange = (event: any) => {
+      if (event === 'SIGNED_IN') {
+        console.log('Login detected, refreshing page...')
+        setTimeout(() => {
+          router.refresh()
+        }, 500)
+      }
+    }
+
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange(handleAuthChange)
+
+    return () => {
+      subscription.unsubscribe()
+    }
+  }, [supabase, router])
+
   return (
     <div className="flex min-h-screen flex-col items-center justify-center bg-gray-100">
       <Toaster />
