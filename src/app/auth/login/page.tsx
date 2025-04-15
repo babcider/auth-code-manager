@@ -146,7 +146,7 @@ export default function Login() {
           showLinks={true}
           providers={['google']}
           redirectTo={redirectUrl}
-          view="sign_in"
+          view="sign_up"
           localization={{
             variables: {
               sign_in: {
