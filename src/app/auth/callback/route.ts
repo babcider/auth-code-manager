@@ -45,22 +45,6 @@ export async function GET(request: Request) {
       return NextResponse.redirect(`${requestUrl.origin}/auth/login?error=no_user`)
     }
 
-    // 세션 설정을 위한 응답 객체 생성
-    const response = NextResponse.redirect(requestUrl.origin)
-    
-    // 세션 쿠키 설정
-    const authCookie = cookieStore.get('sb-auth-token')
-    if (authCookie) {
-      response.cookies.set({
-        name: 'sb-auth-token',
-        value: authCookie.value,
-        path: '/',
-        sameSite: 'lax',
-        secure: true,
-        maxAge: 60 * 60 * 24 * 7 // 7 days
-      })
-    }
-
     console.log('Session exchange successful:', { 
       userId: session.user.id,
       email: session.user.email,
@@ -142,9 +126,7 @@ export async function GET(request: Request) {
 
     // 활성화된 사용자는 홈페이지로 리다이렉션
     console.log('User is active, redirecting to home')
-    const returnTo = requestUrl.searchParams.get('returnTo') || `${requestUrl.origin}/`
-    console.log('Redirecting to:', returnTo)
-    return NextResponse.redirect(returnTo)
+    return NextResponse.redirect(`${requestUrl.origin}/`)
 
   } catch (error) {
     console.error('Unexpected error in callback:', {
