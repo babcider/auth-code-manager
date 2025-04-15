@@ -14,8 +14,14 @@ export default function LoginPage() {
   useEffect(() => {
     const checkUser = async () => {
       try {
-        const { data: { session } } = await supabase.auth.getSession()
+        const { data: { session }, error: sessionError } = await supabase.auth.getSession()
         console.log('Session check:', session) // 디버깅용 로그
+        
+        if (sessionError) {
+          console.error('Session error:', sessionError)
+          setError('세션 확인 중 오류가 발생했습니다.')
+          return
+        }
 
         if (session) {
           // 사용자 권한 확인
@@ -30,11 +36,22 @@ export default function LoginPage() {
 
           if (userError) {
             console.error('Error fetching user data:', userError)
-            setError('사용자 정보를 불러오는 중 오류가 발생했습니다.')
+            if (userError.code === 'PGRST116') {
+              setError('사용자 정보가 존재하지 않습니다. 관리자에게 문의하세요.')
+            } else {
+              setError('사용자 정보를 불러오는 중 오류가 발생했습니다.')
+            }
+            await supabase.auth.signOut()
             return
           }
 
-          if (!userData?.is_active) {
+          if (!userData) {
+            setError('사용자 정보를 찾을 수 없습니다.')
+            await supabase.auth.signOut()
+            return
+          }
+
+          if (!userData.is_active) {
             setError('관리자의 승인이 필요합니다. 승인 후 로그인이 가능합니다.')
             await supabase.auth.signOut()
             return
@@ -51,10 +68,10 @@ export default function LoginPage() {
 
     const {
       data: { subscription },
-    } = supabase.auth.onAuthStateChange((event, session) => {
+    } = supabase.auth.onAuthStateChange(async (event, session) => {
       console.log('Auth state changed:', event, session) // 디버깅용 로그
       if (event === 'SIGNED_IN') {
-        checkUser()
+        await checkUser()
       }
     })
 
