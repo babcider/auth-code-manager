@@ -56,7 +56,7 @@ export default function Login() {
               return
             }
 
-            toast.error('관리자의 승인이 필요합니다. 승인 후 로그인이 가능합니다.')
+            toast.error('관리자의 승인이 필요합니다. 승인 후 로그인이 가능합니다.')  
             await supabase.auth.signOut()
             return
           }
@@ -102,7 +102,7 @@ export default function Login() {
           appearance={{ theme: ThemeSupa }}
           theme="default"
           showLinks={false}
-          providers={['kakao', 'google']}
+          providers={['google']}
           redirectTo={typeof window !== 'undefined' ? `${window.location.origin}/auth/callback` : '/auth/callback'}
           localization={{
             variables: {
