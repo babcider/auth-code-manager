@@ -61,9 +61,8 @@ export default function Login() {
           }
 
           console.log('User is active, proceeding to system page')
-          const baseUrl = typeof window !== 'undefined' ? window.location.origin : ''
           router.refresh()
-          router.push(`${baseUrl}/system`)
+          router.push('/system')
         }
       } catch (error) {
         console.error('Error in checkUser:', error)
