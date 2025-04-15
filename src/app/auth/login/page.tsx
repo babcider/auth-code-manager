@@ -76,7 +76,7 @@ function MessageHandler() {
 export default function Login() {
   const supabase = createClientComponentClient()
   const origin = typeof window !== 'undefined' ? window.location.origin : ''
-  const redirectUrl = `${origin}/auth/callback?returnTo=${origin}/system`
+  const redirectUrl = `${origin}/auth/callback?returnTo=${origin}/`
 
   return (
     <div className="flex min-h-screen flex-col items-center justify-center bg-gray-100">
