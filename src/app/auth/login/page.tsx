@@ -4,72 +4,67 @@ import { createClientComponentClient } from '@supabase/auth-helpers-nextjs'
 import { Auth } from '@supabase/auth-ui-react'
 import { ThemeSupa } from '@supabase/auth-ui-shared'
 import { useRouter } from 'next/navigation'
-import { useEffect, useState } from 'react'
+import { useEffect } from 'react'
 
-export default function LoginPage() {
-  const router = useRouter()
+export default function Login() {
   const supabase = createClientComponentClient()
-  const [error, setError] = useState<string | null>(null)
+  const router = useRouter()
 
   useEffect(() => {
     const checkUser = async () => {
       try {
+        console.log('세션 체크 시작...')
         const { data: { session }, error: sessionError } = await supabase.auth.getSession()
-        console.log('Session check:', session) // 디버깅용 로그
+        console.log('세션 데이터:', session)
         
         if (sessionError) {
-          console.error('Session error:', sessionError)
-          setError('세션 확인 중 오류가 발생했습니다.')
+          console.error('세션 에러:', sessionError)
           return
         }
 
-        if (session) {
-          // 사용자 권한 확인
+        if (session?.user) {
+          console.log('사용자 정보 조회 시작...')
           const { data: userData, error: userError } = await supabase
             .from('users')
-            .select('is_active, role')
+            .select('*')
             .eq('id', session.user.id)
             .single()
-          
-          console.log('User data:', userData) // 디버깅용 로그
-          console.log('User error:', userError) // 디버깅용 로그
+
+          console.log('사용자 데이터:', userData)
+          console.log('사용자 에러:', userError)
 
           if (userError) {
-            console.error('Error fetching user data:', userError)
-            if (userError.code === 'PGRST116') {
-              setError('사용자 정보가 존재하지 않습니다. 관리자에게 문의하세요.')
-            } else {
-              setError('사용자 정보를 불러오는 중 오류가 발생했습니다.')
-            }
+            console.error('사용자 정보 조회 실패:', userError)
             await supabase.auth.signOut()
             return
           }
 
           if (!userData) {
-            setError('사용자 정보를 찾을 수 없습니다.')
+            console.error('사용자 정보가 없음')
             await supabase.auth.signOut()
             return
           }
 
-          if (!userData.is_active) {
-            setError('관리자의 승인이 필요합니다. 승인 후 로그인이 가능합니다.')
+          if (!userData.active) {
+            console.error('비활성화된 사용자')
             await supabase.auth.signOut()
             return
           }
 
-          router.push('/')
+          console.log('로그인 성공, 리다이렉트 시작...')
+          router.push('/system')
           router.refresh()
         }
       } catch (error) {
-        console.error('Error in checkUser:', error)
-        setError('로그인 처리 중 오류가 발생했습니다.')
+        console.error('예상치 못한 에러:', error)
       }
     }
 
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange(async (event, session) => {
-      console.log('Auth state changed:', event, session) // 디버깅용 로그
+      console.log('인증 상태 변경:', event)
+      console.log('새 세션:', session)
       if (event === 'SIGNED_IN') {
         await checkUser()
       }
@@ -83,38 +78,16 @@ export default function LoginPage() {
   }, [router, supabase])
 
   return (
-    <div className="flex min-h-screen flex-col items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
-      <div className="w-full max-w-md space-y-8">
-        <div className="text-center">
-          <h1 className="text-2xl font-bold">인증 코드 관리</h1>
-          <p className="mt-2 text-gray-600">계정으로 로그인하세요</p>
-        </div>
-        {error && (
-          <div className="rounded-md bg-red-50 p-4">
-            <div className="flex">
-              <div className="ml-3">
-                <h3 className="text-sm font-medium text-red-800">오류</h3>
-                <div className="mt-2 text-sm text-red-700">
-                  <p>{error}</p>
-                </div>
-              </div>
-            </div>
-          </div>
-        )}
+    <div className="flex min-h-screen flex-col items-center justify-center bg-gray-100">
+      <div className="w-full max-w-md rounded-lg bg-white p-8 shadow-md">
+        <h2 className="mb-6 text-center text-2xl font-bold text-gray-900">로그인</h2>
         <Auth
           supabaseClient={supabase}
-          appearance={{
-            theme: ThemeSupa,
-            variables: {
-              default: {
-                colors: {
-                  brand: '#2563eb',
-                  brandAccent: '#1d4ed8'
-                }
-              }
-            }
-          }}
+          appearance={{ theme: ThemeSupa }}
+          theme="default"
+          showLinks={false}
           providers={['kakao', 'google']}
+          redirectTo={`${process.env.NEXT_PUBLIC_SITE_URL}/auth/callback`}
           localization={{
             variables: {
               sign_in: {
@@ -124,21 +97,9 @@ export default function LoginPage() {
                 loading_button_label: '로그인 중...',
                 social_provider_text: '{{provider}}로 계속하기',
                 link_text: '이미 계정이 있으신가요? 로그인하기'
-              },
-              sign_up: {
-                email_label: '이메일',
-                password_label: '비밀번호',
-                button_label: '회원가입',
-                loading_button_label: '가입 중...',
-                social_provider_text: '{{provider}}로 계속하기',
-                link_text: '계정이 없으신가요? 회원가입하기',
-                confirmation_text: '확인 이메일을 보냈습니다. 이메일을 확인해주세요.'
               }
             }
           }}
-          theme="default"
-          redirectTo={`${process.env.NEXT_PUBLIC_SITE_URL || 'https://auth-code-manager-one.vercel.app'}/auth/callback`}
-          onlyThirdPartyProviders={false}
         />
       </div>
     </div>
