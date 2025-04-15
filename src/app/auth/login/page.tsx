@@ -19,31 +19,46 @@ export default function Login() {
         
         if (sessionError) {
           console.error('Session error:', sessionError)
+          toast.error('세션 확인 중 오류가 발생했습니다.')
           return
         }
 
-        if (session?.user) {
-          const { data: userData, error: userError } = await supabase
-            .from('users')
-            .select('*')
-            .eq('id', session.user.id)
-            .single()
-
-          console.log('User data:', userData)
-          
-          if (userError) {
-            console.error('User data error:', userError)
-            return
-          }
-
-          if (userData?.active) {
-            router.refresh()
-            router.push('/system')
-          } else if (userData && !userData.active) {
-            await supabase.auth.signOut()
-            toast.error('비활성화된 계정입니다. 관리자에게 문의하세요.')
-          }
+        if (!session?.user) {
+          return
         }
+
+        // 잠시 대기 후 사용자 데이터 조회 (트리거 실행 대기)
+        await new Promise(resolve => setTimeout(resolve, 1000))
+
+        const { data: userData, error: userError } = await supabase
+          .from('users')
+          .select('*')
+          .eq('id', session.user.id)
+          .single()
+
+        console.log('User data:', userData)
+        
+        if (userError) {
+          console.error('User data error:', userError)
+          toast.error('사용자 정보를 가져오는데 실패했습니다.')
+          return
+        }
+
+        if (!userData) {
+          console.error('User not found')
+          toast.error('사용자 정보를 찾을 수 없습니다.')
+          return
+        }
+
+        if (!userData.active) {
+          console.error('User is not active')
+          await supabase.auth.signOut()
+          toast.error('비활성화된 계정입니다. 관리자에게 문의하세요.')
+          return
+        }
+
+        router.refresh()
+        router.push('/system')
       } catch (error) {
         console.error('Error in checkUser:', error)
         toast.error('로그인 처리 중 오류가 발생했습니다.')
