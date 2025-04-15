@@ -112,7 +112,7 @@ export default function Login() {
         }
 
         // 활성화된 사용자는 메인 페이지로 이동
-        router.push('/')
+        window.location.href = '/'
       }
     })
 
