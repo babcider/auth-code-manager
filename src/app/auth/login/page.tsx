@@ -146,7 +146,7 @@ export default function Login() {
           showLinks={true}
           providers={['google']}
           redirectTo={redirectUrl}
-          view="sign_up"
+          view="sign_in"
           localization={{
             variables: {
               sign_in: {
@@ -155,7 +155,7 @@ export default function Login() {
                 button_label: '로그인',
                 loading_button_label: '로그인 중...',
                 social_provider_text: '{{provider}}로 계속하기',
-                link_text: '계정이 없으신가요? 회원가입하기'
+                link_text: '이미 계정이 있으신가요? 로그인하기'
               },
               sign_up: {
                 email_label: '이메일',
@@ -163,7 +163,7 @@ export default function Login() {
                 button_label: '회원가입',
                 loading_button_label: '회원가입 중...',
                 social_provider_text: '{{provider}}로 계속하기',
-                link_text: '이미 계정이 있으신가요? 로그인하기',
+                link_text: '계정이 없으신가요? 회원가입하기',
                 confirmation_text: '회원가입이 완료되었습니다!'
               }
             }
