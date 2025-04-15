@@ -14,10 +14,15 @@ export default function Login() {
   useEffect(() => {
     const handleAuthChange = async (event: string, session: any) => {
       console.log('Auth event:', event)
-      console.log('Session:', session)
+      console.log('Session check:', session)
 
       if (event === 'SIGNED_IN' && session?.user) {
         try {
+          console.log('Checking user data for:', session.user.id)
+          
+          // 사용자 데이터 조회 전에 잠시 대기
+          await new Promise(resolve => setTimeout(resolve, 1000))
+          
           // 사용자 데이터 조회
           const { data: userData, error: userError } = await supabase
             .from('users')
@@ -25,7 +30,7 @@ export default function Login() {
             .eq('id', session.user.id)
             .single()
 
-          console.log('User data:', userData)
+          console.log('User data check result:', userData)
           
           if (userError) {
             console.error('User data error:', userError)
@@ -36,7 +41,7 @@ export default function Login() {
 
           // 신규 사용자인 경우
           if (!userData) {
-            console.log('New user, creating record...')
+            console.log('Creating new user record...')
             const { error: insertError } = await supabase
               .from('users')
               .insert([
@@ -62,17 +67,15 @@ export default function Login() {
           }
 
           // 활성화 상태 체크
-          const isUserActive = userData.active === true
-
-          if (!isUserActive) {
-            console.error('User is not active', userData)
-            await supabase.auth.signOut()
+          if (!userData.active) {
+            console.error('User is not active:', userData)
             toast.error('비활성화된 계정입니다. 관리자에게 문의하세요.')
+            await supabase.auth.signOut()
             return
           }
 
           // 활성화된 사용자만 홈페이지로 이동
-          console.log('User is active, proceeding to home page')
+          console.log('User is active, redirecting to home')
           router.refresh()
           await new Promise(resolve => setTimeout(resolve, 500))
           window.location.href = '/'
@@ -83,6 +86,16 @@ export default function Login() {
         }
       }
     }
+
+    // 초기 세션 체크
+    const checkInitialSession = async () => {
+      const { data: { session } } = await supabase.auth.getSession()
+      if (session) {
+        await handleAuthChange('SIGNED_IN', session)
+      }
+    }
+    
+    checkInitialSession()
 
     const {
       data: { subscription },
