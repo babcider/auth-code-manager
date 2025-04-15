@@ -76,7 +76,7 @@ function MessageHandler() {
 export default function Login() {
   const supabase = createClientComponentClient()
   const baseUrl = 'https://auth-code-manager-one.vercel.app'
-  const redirectUrl = `${baseUrl}/auth/callback?returnTo=${baseUrl}/`
+  const redirectUrl = `${baseUrl}/auth/callback`
 
   return (
     <div className="flex min-h-screen flex-col items-center justify-center bg-gray-100">
