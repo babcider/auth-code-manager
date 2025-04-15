@@ -4,13 +4,47 @@ import { createClientComponentClient } from '@supabase/auth-helpers-nextjs'
 import { Auth } from '@supabase/auth-ui-react'
 import { ThemeSupa } from '@supabase/auth-ui-shared'
 import { useRouter, useSearchParams } from 'next/navigation'
-import { useEffect } from 'react'
+import { Suspense, useEffect } from 'react'
 import { toast } from 'react-hot-toast'
+
+// 에러 메시지 처리를 위한 컴포넌트
+function ErrorHandler() {
+  const searchParams = useSearchParams()
+  
+  useEffect(() => {
+    const error = searchParams.get('error')
+    const message = searchParams.get('message')
+
+    if (error) {
+      switch (error) {
+        case 'session':
+          toast.error('로그인 세션 처리 중 오류가 발생했습니다.')
+          break
+        case 'user_data':
+          toast.error('사용자 정보를 가져오는데 실패했습니다.')
+          break
+        case 'user_creation':
+          toast.error('사용자 계정 생성에 실패했습니다.')
+          break
+        case 'inactive':
+          toast.error('비활성화된 계정입니다. 관리자에게 문의하세요.')
+          break
+        default:
+          toast.error('로그인 처리 중 오류가 발생했습니다.')
+      }
+    }
+
+    if (message === 'approval_required') {
+      toast.error('관리자의 승인이 필요합니다. 승인 후 로그인이 가능합니다.')
+    }
+  }, [searchParams])
+
+  return null
+}
 
 export default function Login() {
   const supabase = createClientComponentClient()
   const router = useRouter()
-  const searchParams = useSearchParams()
 
   useEffect(() => {
     const handleAuthChange = async (event: string, session: any) => {
@@ -102,42 +136,18 @@ export default function Login() {
       data: { subscription },
     } = supabase.auth.onAuthStateChange(handleAuthChange)
 
-    // URL 파라미터 체크
-    const error = searchParams.get('error')
-    const message = searchParams.get('message')
-
-    if (error) {
-      switch (error) {
-        case 'session':
-          toast.error('로그인 세션 처리 중 오류가 발생했습니다.')
-          break
-        case 'user_data':
-          toast.error('사용자 정보를 가져오는데 실패했습니다.')
-          break
-        case 'user_creation':
-          toast.error('사용자 계정 생성에 실패했습니다.')
-          break
-        case 'inactive':
-          toast.error('비활성화된 계정입니다. 관리자에게 문의하세요.')
-          break
-        default:
-          toast.error('로그인 처리 중 오류가 발생했습니다.')
-      }
-    }
-
-    if (message === 'approval_required') {
-      toast.error('관리자의 승인이 필요합니다. 승인 후 로그인이 가능합니다.')
-    }
-
     return () => {
       subscription.unsubscribe()
     }
-  }, [router, supabase, searchParams])
+  }, [router, supabase])
 
   return (
     <div className="flex min-h-screen flex-col items-center justify-center bg-gray-100">
       <div className="w-full max-w-md rounded-lg bg-white p-8 shadow-md">
         <h2 className="mb-6 text-center text-2xl font-bold text-gray-900">로그인</h2>
+        <Suspense fallback={null}>
+          <ErrorHandler />
+        </Suspense>
         <Auth
           supabaseClient={supabase}
           appearance={{ theme: ThemeSupa }}
