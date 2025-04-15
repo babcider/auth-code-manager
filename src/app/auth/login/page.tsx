@@ -12,21 +12,13 @@ export default function Login() {
   const router = useRouter()
 
   useEffect(() => {
-    const checkUser = async () => {
-      try {
-        const { data: { session }, error: sessionError } = await supabase.auth.getSession()
-        console.log('Session check:', session)
-        
-        if (sessionError) {
-          console.error('Session error:', sessionError)
-          toast.error('세션 확인 중 오류가 발생했습니다.')
-          return
-        }
+    const handleAuthChange = async (event: string, session: any) => {
+      console.log('Auth event:', event)
+      console.log('Session:', session)
 
-        if (session?.user) {
-          // 잠시 대기 후 사용자 데이터 조회 (트리거 실행 대기)
-          await new Promise(resolve => setTimeout(resolve, 1000))
-
+      if (event === 'SIGNED_IN' && session?.user) {
+        try {
+          // 사용자 데이터 조회
           const { data: userData, error: userError } = await supabase
             .from('users')
             .select('*')
@@ -52,8 +44,8 @@ export default function Login() {
                   id: session.user.id,
                   email: session.user.email,
                   role: 'user',
-                  active: false, // 기본적으로 비활성 상태로 생성
-                  provider: session.user.app_metadata.provider // 로그인 제공자 정보 저장
+                  active: false,
+                  provider: session.user.app_metadata?.provider || 'email'
                 }
               ])
 
@@ -69,11 +61,8 @@ export default function Login() {
             return
           }
 
-          // 활성화 상태 체크 로직
-          console.log('User active status:', userData.active)
-          console.log('User is_active status:', userData.is_active)
-          
-          const isUserActive = userData.active === true || userData.is_active === true
+          // 활성화 상태 체크
+          const isUserActive = userData.active === true
 
           if (!isUserActive) {
             console.error('User is not active', userData)
@@ -82,34 +71,22 @@ export default function Login() {
             return
           }
 
+          // 활성화된 사용자만 홈페이지로 이동
           console.log('User is active, proceeding to home page')
-          
-          // 상태 업데이트를 위한 리프레시
           router.refresh()
-          
-          // 상태 업데이트가 완료될 때까지 잠시 대기
           await new Promise(resolve => setTimeout(resolve, 500))
-          
-          // 홈 페이지로 리다이렉션
           window.location.href = '/'
+        } catch (error) {
+          console.error('Error in auth change handler:', error)
+          toast.error('로그인 처리 중 오류가 발생했습니다.')
+          await supabase.auth.signOut()
         }
-      } catch (error) {
-        console.error('Error in checkUser:', error)
-        toast.error('로그인 처리 중 오류가 발생했습니다.')
       }
     }
 
     const {
       data: { subscription },
-    } = supabase.auth.onAuthStateChange(async (event, session) => {
-      console.log('인증 상태 변경:', event)
-      console.log('새 세션:', session)
-      if (event === 'SIGNED_IN') {
-        await checkUser()
-      }
-    })
-
-    checkUser()
+    } = supabase.auth.onAuthStateChange(handleAuthChange)
 
     return () => {
       subscription.unsubscribe()
