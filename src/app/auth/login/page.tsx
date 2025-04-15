@@ -80,6 +80,47 @@ export default function Login() {
   const baseUrl = 'https://auth-code-manager-one.vercel.app'
   const redirectUrl = `${baseUrl}/auth/callback`
 
+  useEffect(() => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
+      if (event === 'SIGNED_IN' && session?.user) {
+        // 사용자 활성화 상태 확인
+        const { data: userData, error: userError } = await supabase
+          .from('users')
+          .select('is_active')
+          .eq('id', session.user.id)
+          .single()
+
+        if (userError) {
+          console.error('Error fetching user data:', userError)
+          toast.error('사용자 정보를 확인하는 중 오류가 발생했습니다.')
+          return
+        }
+
+        if (!userData?.is_active) {
+          toast('계정이 아직 승인되지 않았습니다. 관리자의 승인을 기다려주세요.', {
+            duration: 6000,
+            position: 'top-center',
+            icon: '⚠️',
+            style: {
+              borderRadius: '10px',
+              background: '#333',
+              color: '#fff',
+            },
+          })
+          await supabase.auth.signOut()
+          return
+        }
+
+        // 활성화된 사용자는 메인 페이지로 이동
+        router.push('/')
+      }
+    })
+
+    return () => {
+      subscription.unsubscribe()
+    }
+  }, [supabase, router])
+
   return (
     <div className="flex min-h-screen flex-col items-center justify-center bg-gray-100">
       <Toaster />
