@@ -126,7 +126,21 @@ export async function GET(request: Request) {
 
     // 활성화된 사용자는 홈페이지로 리다이렉션
     console.log('User is active, redirecting to home')
-    return NextResponse.redirect(`${requestUrl.origin}/`)
+    const redirectUrl = `${requestUrl.origin}/`
+    console.log('Redirect URL:', redirectUrl)
+    
+    try {
+      const response = NextResponse.redirect(redirectUrl)
+      console.log('Response created successfully:', {
+        status: response.status,
+        headers: Object.fromEntries(response.headers.entries()),
+        url: response.url
+      })
+      return response
+    } catch (redirectError) {
+      console.error('Error during redirect:', redirectError)
+      return NextResponse.redirect(`${requestUrl.origin}/auth/login?error=redirect_failed`)
+    }
 
   } catch (error) {
     console.error('Unexpected error in callback:', {
