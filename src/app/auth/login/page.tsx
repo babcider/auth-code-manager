@@ -75,6 +75,7 @@ function MessageHandler() {
 
 export default function Login() {
   const supabase = createClientComponentClient()
+  const redirectUrl = typeof window !== 'undefined' ? `${window.location.origin}/auth/callback` : '/auth/callback'
 
   return (
     <div className="flex min-h-screen flex-col items-center justify-center bg-gray-100">
@@ -86,11 +87,22 @@ export default function Login() {
         </Suspense>
         <Auth
           supabaseClient={supabase}
-          appearance={{ theme: ThemeSupa }}
+          appearance={{ 
+            theme: ThemeSupa,
+            variables: {
+              default: {
+                colors: {
+                  brand: '#2563eb',
+                  brandAccent: '#1d4ed8',
+                }
+              }
+            }
+          }}
           theme="default"
           showLinks={false}
           providers={['google']}
-          redirectTo={typeof window !== 'undefined' ? `${window.location.origin}/auth/callback` : '/auth/callback'}
+          redirectTo={redirectUrl}
+          view="sign_in"
           localization={{
             variables: {
               sign_in: {
@@ -102,6 +114,11 @@ export default function Login() {
                 link_text: '이미 계정이 있으신가요? 로그인하기'
               }
             }
+          }}
+          onlyThirdPartyProviders={false}
+          magicLink={false}
+          queryParams={{
+            returnTo: typeof window !== 'undefined' ? window.location.origin : '/'
           }}
         />
       </div>
