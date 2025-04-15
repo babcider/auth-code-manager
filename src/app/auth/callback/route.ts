@@ -13,22 +13,65 @@ export async function GET(request: Request) {
   console.log('Auth callback received. Code:', code) // 디버깅용 로그
 
   if (code) {
-    const supabase = createRouteHandlerClient({ cookies })
-    try {
-      await supabase.auth.exchangeCodeForSession(code)
-      console.log('Code exchange successful') // 디버깅용 로그
-      
-      // 홈페이지로 리다이렉트
-      return NextResponse.redirect(new URL('/', requestUrl.origin), {
-        status: 303
-      })
-    } catch (error) {
-      console.error('Error in callback:', error) // 디버깅용 로그
-      return NextResponse.redirect(
-        new URL('/auth/login?error=인증 처리 중 오류가 발생했습니다', requestUrl.origin),
-        { status: 303 }
-      )
+    const cookieStore = cookies()
+    const supabase = createRouteHandlerClient({ cookies: () => cookieStore })
+    
+    // 인증 코드로 세션 교환
+    const { data: { session }, error: sessionError } = await supabase.auth.exchangeCodeForSession(code)
+    
+    if (sessionError) {
+      console.error('Session error:', sessionError)
+      return NextResponse.redirect(`${requestUrl.origin}/auth/login?error=session`)
     }
+
+    if (session?.user) {
+      // 사용자 데이터 조회
+      const { data: userData, error: userError } = await supabase
+        .from('users')
+        .select('*')
+        .eq('id', session.user.id)
+        .single()
+
+      if (userError) {
+        console.error('User data error:', userError)
+        return NextResponse.redirect(`${requestUrl.origin}/auth/login?error=user_data`)
+      }
+
+      // 신규 사용자인 경우
+      if (!userData) {
+        const { error: insertError } = await supabase
+          .from('users')
+          .insert([
+            { 
+              id: session.user.id,
+              email: session.user.email,
+              role: 'user',
+              active: false,
+              provider: session.user.app_metadata?.provider || 'email'
+            }
+          ])
+
+        if (insertError) {
+          console.error('User creation error:', insertError)
+          return NextResponse.redirect(`${requestUrl.origin}/auth/login?error=user_creation`)
+        }
+
+        // 신규 사용자는 로그아웃 처리
+        await supabase.auth.signOut()
+        return NextResponse.redirect(`${requestUrl.origin}/auth/login?message=approval_required`)
+      }
+
+      // 비활성 사용자 체크
+      if (!userData.active) {
+        await supabase.auth.signOut()
+        return NextResponse.redirect(`${requestUrl.origin}/auth/login?error=inactive`)
+      }
+    }
+
+    // 홈페이지로 리다이렉트
+    return NextResponse.redirect(new URL('/', requestUrl.origin), {
+      status: 303
+    })
   }
 
   // 에러 발생 시 로그인 페이지로 리다이렉트
