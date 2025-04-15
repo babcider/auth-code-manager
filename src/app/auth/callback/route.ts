@@ -73,7 +73,7 @@ export async function GET(request: Request) {
         id: session.user.id,
         email: session.user.email,
         role: 'user',
-        active: false,
+        is_active: false,
         provider: session.user.app_metadata?.provider || 'email',
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString()
@@ -116,7 +116,7 @@ export async function GET(request: Request) {
     }
 
     // 비활성 사용자 체크
-    if (!userData.active) {
+    if (!userData.is_active) {
       console.log('User is not active, signing out')
       await supabase.auth.signOut()
       return NextResponse.redirect(`${requestUrl.origin}/auth/login?error=inactive`)
