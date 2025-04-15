@@ -3,7 +3,7 @@
 import { createClientComponentClient } from '@supabase/auth-helpers-nextjs'
 import { Auth } from '@supabase/auth-ui-react'
 import { ThemeSupa } from '@supabase/auth-ui-shared'
-import { useRouter, useSearchParams } from 'next/navigation'
+import { useSearchParams } from 'next/navigation'
 import { Suspense, useEffect } from 'react'
 import { toast } from 'react-hot-toast'
 
@@ -44,102 +44,6 @@ function ErrorHandler() {
 
 export default function Login() {
   const supabase = createClientComponentClient()
-  const router = useRouter()
-
-  useEffect(() => {
-    const handleAuthChange = async (event: string, session: any) => {
-      console.log('Auth event:', event)
-      console.log('Session check:', session)
-
-      if (event === 'SIGNED_IN' && session?.user) {
-        try {
-          console.log('Checking user data for:', session.user.id)
-          
-          // 사용자 데이터 조회 전에 잠시 대기
-          await new Promise(resolve => setTimeout(resolve, 1000))
-          
-          // 사용자 데이터 조회
-          const { data: userData, error: userError } = await supabase
-            .from('users')
-            .select('*')
-            .eq('id', session.user.id)
-            .single()
-
-          console.log('User data check result:', userData)
-          
-          if (userError) {
-            console.error('User data error:', userError)
-            toast.error('사용자 정보를 가져오는데 실패했습니다.')
-            await supabase.auth.signOut()
-            return
-          }
-
-          // 신규 사용자인 경우
-          if (!userData) {
-            console.log('Creating new user record...')
-            const { error: insertError } = await supabase
-              .from('users')
-              .insert([
-                { 
-                  id: session.user.id,
-                  email: session.user.email,
-                  role: 'user',
-                  active: false,
-                  provider: session.user.app_metadata?.provider || 'email'
-                }
-              ])
-
-            if (insertError) {
-              console.error('User creation error:', insertError)
-              toast.error('사용자 계정 생성에 실패했습니다.')
-              await supabase.auth.signOut()
-              return
-            }
-
-            toast.error('관리자의 승인이 필요합니다. 승인 후 로그인이 가능합니다.')  
-            await supabase.auth.signOut()
-            return
-          }
-
-          // 활성화 상태 체크
-          if (!userData.active) {
-            console.error('User is not active:', userData)
-            toast.error('비활성화된 계정입니다. 관리자에게 문의하세요.')
-            await supabase.auth.signOut()
-            return
-          }
-
-          // 활성화된 사용자만 홈페이지로 이동
-          console.log('User is active, redirecting to home')
-          router.refresh()
-          await new Promise(resolve => setTimeout(resolve, 500))
-          window.location.href = '/'
-        } catch (error) {
-          console.error('Error in auth change handler:', error)
-          toast.error('로그인 처리 중 오류가 발생했습니다.')
-          await supabase.auth.signOut()
-        }
-      }
-    }
-
-    // 초기 세션 체크
-    const checkInitialSession = async () => {
-      const { data: { session } } = await supabase.auth.getSession()
-      if (session) {
-        await handleAuthChange('SIGNED_IN', session)
-      }
-    }
-    
-    checkInitialSession()
-
-    const {
-      data: { subscription },
-    } = supabase.auth.onAuthStateChange(handleAuthChange)
-
-    return () => {
-      subscription.unsubscribe()
-    }
-  }, [router, supabase])
 
   return (
     <div className="flex min-h-screen flex-col items-center justify-center bg-gray-100">
