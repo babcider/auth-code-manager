@@ -18,24 +18,58 @@ function ErrorHandler() {
     if (error) {
       switch (error) {
         case 'session':
-          toast.error('로그인 세션 처리 중 오류가 발생했습니다.')
+          toast.error('로그인 세션 처리 중 오류가 발생했습니다.', {
+            duration: 5000,
+            position: 'top-center',
+          })
           break
         case 'user_data':
-          toast.error('사용자 정보를 가져오는데 실패했습니다.')
+          toast.error('사용자 정보를 가져오는데 실패했습니다.', {
+            duration: 5000,
+            position: 'top-center',
+          })
           break
         case 'user_creation':
-          toast.error('사용자 계정 생성에 실패했습니다.')
+          toast.error('사용자 계정 생성에 실패했습니다.', {
+            duration: 5000,
+            position: 'top-center',
+          })
           break
         case 'inactive':
-          toast.error('비활성화된 계정입니다. 관리자에게 문의하세요.')
+          toast('계정이 아직 승인되지 않았습니다. 관리자의 승인을 기다려주세요.', {
+            duration: 6000,
+            position: 'top-center',
+            icon: '⚠️',
+            style: {
+              borderRadius: '10px',
+              background: '#333',
+              color: '#fff',
+            },
+          })
           break
         default:
-          toast.error('로그인 처리 중 오류가 발생했습니다.')
+          toast.error('로그인 처리 중 오류가 발생했습니다.', {
+            duration: 5000,
+            position: 'top-center',
+          })
       }
     }
 
     if (message === 'approval_required') {
-      toast.error('관리자의 승인이 필요합니다. 승인 후 로그인이 가능합니다.')
+      toast('회원가입이 완료되었습니다! 👋', {
+        duration: 3000,
+        position: 'top-center',
+      })
+      toast('관리자 승인 후 로그인이 가능합니다. 잠시만 기다려주세요.', {
+        duration: 6000,
+        position: 'top-center',
+        icon: '🔔',
+        style: {
+          borderRadius: '10px',
+          background: '#333',
+          color: '#fff',
+        },
+      })
     }
   }, [searchParams])
 
