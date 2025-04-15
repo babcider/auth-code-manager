@@ -105,110 +105,51 @@ export default function AuthCodeList({ initialCodes = [] }: AuthCodeListProps) {
 
   const fileInputRef = useRef<HTMLInputElement>(null)
 
+  const [isLoading, setIsLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
+
   /**
    * 코드 목록을 조회합니다.
    * 검색어, 상태 필터, 페이지네이션을 적용하여 데이터를 가져옵니다.
    */
   const fetchCodes = async () => {
     try {
-      setIsGenerating(true);
-      console.log('Fetching codes with params:', {
-        searchTerm,
-        statusFilter,
-        currentPage,
-        itemsPerPage
-      });
+      setIsLoading(true)
+      setError(null)
+      console.log('Fetching codes...') // 디버깅용 로그
 
-      // 전체 데이터 조회를 위한 쿼리
-      let statsQuery = supabase
+      let query = supabase
         .from('auth_codes')
-        .select('*');
-
-      // 검색 조건 적용
-      if (searchTerm) {
-        statsQuery = statsQuery.or(`code.ilike.%${searchTerm}%,context.ilike.%${searchTerm}%`);
-      }
-
-      // 상태 필터 적용
-      if (statusFilter !== 'all') {
-        if (statusFilter === 'used') {
-          statsQuery = statsQuery.eq('is_used', true);
-        } else if (statusFilter === 'expired') {
-          statsQuery = statsQuery.eq('is_used', false).lt('expires_at', new Date().toISOString());
-        } else if (statusFilter === 'active') {
-          statsQuery = statsQuery.eq('is_used', false).gt('expires_at', new Date().toISOString());
-        }
-      }
-
-      // 페이지네이션을 위한 쿼리
-      let pageQuery = supabase
-        .from('auth_codes')
-        .select('*', { count: 'exact' });
-
-      // 동일한 검색 조건 적용
-      if (searchTerm) {
-        pageQuery = pageQuery.or(`code.ilike.%${searchTerm}%,context.ilike.%${searchTerm}%`);
-      }
-
-      if (statusFilter !== 'all') {
-        if (statusFilter === 'used') {
-          pageQuery = pageQuery.eq('is_used', true);
-        } else if (statusFilter === 'expired') {
-          pageQuery = pageQuery.eq('is_used', false).lt('expires_at', new Date().toISOString());
-        } else if (statusFilter === 'active') {
-          pageQuery = pageQuery.eq('is_used', false).gt('expires_at', new Date().toISOString());
-        }
-      }
-
-      // 페이지네이션 적용
-      const { count } = await pageQuery;
-      pageQuery = pageQuery
+        .select('*')
         .order('created_at', { ascending: false })
-        .range(startIndex, endIndex - 1);
 
-      // 두 쿼리 동시 실행
-      const [statsResult, pageResult] = await Promise.all([
-        statsQuery,
-        pageQuery
-      ]);
+      console.log('Query:', query) // 디버깅용 로그
 
-      if (statsResult.error || pageResult.error) {
-        throw statsResult.error || pageResult.error;
+      const { data, error } = await query
+
+      console.log('Fetched data:', data) // 디버깅용 로그
+      console.log('Fetch error:', error) // 디버깅용 로그
+
+      if (error) {
+        console.error('Error fetching codes:', error)
+        setError('데이터를 불러오는 중 오류가 발생했습니다.')
+        notification.showNotification('error', '데이터를 불러오는 중 오류가 발생했습니다.')
+        return
       }
 
-      // 전체 데이터로 통계 계산
-      const allCodes = statsResult.data || [];
-      const active = allCodes.filter(code => 
-        !code.is_used && 
-        code.expires_at && 
-        new Date(code.expires_at) > new Date()
-      ).length;
-      const used = allCodes.filter(code => code.is_used).length;
-      const expired = allCodes.filter(code => 
-        !code.is_used && 
-        code.expires_at && 
-        new Date(code.expires_at) <= new Date()
-      ).length;
-
-      // 현재 페이지 데이터 설정
-      setCodes(pageResult.data || []);
-      setTotalCount(allCodes.length);
-      setFilteredCount(count || 0);
-
-      // 통계 정보 업데이트
-      setStats({
-        total: allCodes.length,
-        active,
-        used,
-        expired
-      });
+      setCodes(data || [])
     } catch (error) {
-      console.error('Error fetching codes:', error);
-      notification.showNotification('error', '인증 코드 목록을 불러오는 중 오류가 발생했습니다.');
+      console.error('Error in fetchCodes:', error)
+      setError('데이터를 불러오는 중 오류가 발생했습니다.')
+      notification.showNotification('error', '데이터를 불러오는 중 오류가 발생했습니다.')
     } finally {
-      setIsGenerating(false);
+      setIsLoading(false)
     }
-  };
+  }
+
+  useEffect(() => {
+    fetchCodes()
+  }, [])
 
   /**
    * 새로운 인증 코드를 생성합니다.
