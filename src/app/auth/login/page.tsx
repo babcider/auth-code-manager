@@ -61,8 +61,15 @@ export default function Login() {
           }
 
           console.log('User is active, proceeding to home page')
+          
+          // 상태 업데이트를 위한 리프레시
           router.refresh()
-          router.push('/')
+          
+          // 상태 업데이트가 완료될 때까지 잠시 대기
+          await new Promise(resolve => setTimeout(resolve, 500))
+          
+          // 홈 페이지로 리다이렉션
+          window.location.href = '/'
         }
       } catch (error) {
         console.error('Error in checkUser:', error)
