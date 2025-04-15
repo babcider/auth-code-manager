@@ -97,7 +97,7 @@ export default function Login() {
           theme="default"
           showLinks={false}
           providers={['kakao', 'google']}
-          redirectTo={`${process.env.NEXT_PUBLIC_SITE_URL}/auth/callback`}
+          redirectTo={typeof window !== 'undefined' ? `${window.location.origin}/auth/callback` : '/auth/callback'}
           localization={{
             variables: {
               sign_in: {
