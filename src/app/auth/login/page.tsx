@@ -4,11 +4,11 @@ import { createClientComponentClient } from '@supabase/auth-helpers-nextjs'
 import { Auth } from '@supabase/auth-ui-react'
 import { ThemeSupa } from '@supabase/auth-ui-shared'
 import { useSearchParams } from 'next/navigation'
-import { Suspense, useEffect } from 'react'
+import { useEffect } from 'react'
 import { toast } from 'react-hot-toast'
 
-// 에러 메시지 처리를 위한 컴포넌트
-function ErrorHandler() {
+export default function Login() {
+  const supabase = createClientComponentClient()
   const searchParams = useSearchParams()
   
   useEffect(() => {
@@ -73,19 +73,10 @@ function ErrorHandler() {
     }
   }, [searchParams])
 
-  return null
-}
-
-export default function Login() {
-  const supabase = createClientComponentClient()
-
   return (
     <div className="flex min-h-screen flex-col items-center justify-center bg-gray-100">
       <div className="w-full max-w-md rounded-lg bg-white p-8 shadow-md">
         <h2 className="mb-6 text-center text-2xl font-bold text-gray-900">로그인</h2>
-        <Suspense fallback={null}>
-          <ErrorHandler />
-        </Suspense>
         <Auth
           supabaseClient={supabase}
           appearance={{ theme: ThemeSupa }}
