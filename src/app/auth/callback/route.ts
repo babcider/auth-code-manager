@@ -2,6 +2,8 @@ import { createRouteHandlerClient } from '@supabase/auth-helpers-nextjs'
 import { cookies } from 'next/headers'
 import { NextResponse } from 'next/server'
 
+export const dynamic = 'force-dynamic'
+
 /**
  * 소셜 로그인 콜백 핸들러
  * 로그인 후 사용자를 메인 페이지로 리다이렉트합니다.
@@ -41,6 +43,22 @@ export async function GET(request: Request) {
     if (!session?.user) {
       console.error('No user in session after exchange')
       return NextResponse.redirect(`${requestUrl.origin}/auth/login?error=no_user`)
+    }
+
+    // 세션 설정을 위한 응답 객체 생성
+    const response = NextResponse.redirect(requestUrl.origin)
+    
+    // 세션 쿠키 설정
+    const authCookie = cookieStore.get('sb-auth-token')
+    if (authCookie) {
+      response.cookies.set({
+        name: 'sb-auth-token',
+        value: authCookie.value,
+        path: '/',
+        sameSite: 'lax',
+        secure: true,
+        maxAge: 60 * 60 * 24 * 7 // 7 days
+      })
     }
 
     console.log('Session exchange successful:', { 
@@ -124,7 +142,8 @@ export async function GET(request: Request) {
 
     // 활성화된 사용자는 홈페이지로 리다이렉션
     console.log('User is active, redirecting to home')
-    const returnTo = requestUrl.searchParams.get('returnTo') || requestUrl.origin
+    const returnTo = requestUrl.searchParams.get('returnTo') || `${requestUrl.origin}/`
+    console.log('Redirecting to:', returnTo)
     return NextResponse.redirect(returnTo)
 
   } catch (error) {
