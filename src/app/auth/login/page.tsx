@@ -15,7 +15,7 @@ export default function LoginPage() {
     const checkUser = async () => {
       try {
         const { data: { session } } = await supabase.auth.getSession()
-        console.log('Session:', session) // 디버깅용 로그
+        console.log('Session check:', session) // 디버깅용 로그
 
         if (session) {
           // 사용자 권한 확인
@@ -49,7 +49,20 @@ export default function LoginPage() {
       }
     }
 
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((event, session) => {
+      console.log('Auth state changed:', event, session) // 디버깅용 로그
+      if (event === 'SIGNED_IN') {
+        checkUser()
+      }
+    })
+
     checkUser()
+
+    return () => {
+      subscription.unsubscribe()
+    }
   }, [router, supabase])
 
   return (
@@ -107,7 +120,8 @@ export default function LoginPage() {
             }
           }}
           theme="default"
-          redirectTo="https://auth-code-manager-one.vercel.app/auth/callback"
+          redirectTo={`${process.env.NEXT_PUBLIC_SITE_URL || 'https://auth-code-manager-one.vercel.app'}/auth/callback`}
+          onlyThirdPartyProviders={false}
         />
       </div>
     </div>
