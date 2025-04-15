@@ -1,39 +1,61 @@
-import { createServerComponentClient } from '@supabase/auth-helpers-nextjs'
-import { cookies } from 'next/headers'
-import { redirect } from 'next/navigation'
-import { Button } from '@/components/ui/button'
+'use client'
 
-export default async function LoginPage({
-  searchParams,
-}: {
-  searchParams: { error?: string }
-}) {
-  const supabase = createServerComponentClient({ cookies })
-  const { data: { session } } = await supabase.auth.getSession()
+import { createClientComponentClient } from '@supabase/auth-helpers-nextjs'
+import { Auth } from '@supabase/auth-ui-react'
+import { ThemeSupa } from '@supabase/auth-ui-shared'
+import { useRouter } from 'next/navigation'
+import { useEffect } from 'react'
 
-  if (session) {
-    redirect('/')
-  }
+export default function LoginPage() {
+  const router = useRouter()
+  const supabase = createClientComponentClient()
+
+  useEffect(() => {
+    const checkUser = async () => {
+      const { data: { session } } = await supabase.auth.getSession()
+      if (session) {
+        router.push('/')
+      }
+    }
+    checkUser()
+  }, [router, supabase])
 
   return (
-    <div className="flex min-h-screen flex-col items-center justify-center gap-4 py-24">
-      <h1 className="text-2xl font-bold">로그인</h1>
-      {searchParams.error && (
-        <div className="rounded-md bg-red-50 p-4 text-sm text-red-500">
-          {searchParams.error}
+    <div className="flex min-h-screen flex-col items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
+      <div className="w-full max-w-md space-y-8">
+        <div className="text-center">
+          <h1 className="text-2xl font-bold">인증 코드 관리</h1>
+          <p className="mt-2 text-gray-600">계정으로 로그인하세요</p>
         </div>
-      )}
-      <div className="flex flex-col gap-2">
-        <form action="/auth/sign-in/kakao" method="post">
-          <Button className="w-full bg-[#FEE500] text-black hover:bg-[#FEE500]/90">
-            카카오로 로그인
-          </Button>
-        </form>
-        <form action="/auth/sign-in/google" method="post">
-          <Button className="w-full bg-white text-black hover:bg-white/90 border border-gray-300">
-            Google로 로그인
-          </Button>
-        </form>
+        <Auth
+          supabaseClient={supabase}
+          appearance={{
+            theme: ThemeSupa,
+            variables: {
+              default: {
+                colors: {
+                  brand: '#2563eb',
+                  brandAccent: '#1d4ed8'
+                }
+              }
+            }
+          }}
+          providers={['kakao', 'google']}
+          localization={{
+            variables: {
+              sign_in: {
+                email_label: '이메일',
+                password_label: '비밀번호',
+                button_label: '로그인',
+                loading_button_label: '로그인 중...',
+                social_provider_text: '{{provider}}로 계속하기',
+                link_text: '이미 계정이 있으신가요? 로그인하기'
+              }
+            }
+          }}
+          theme="default"
+          redirectTo="https://auth-code-manager-one.vercel.app/auth/callback"
+        />
       </div>
     </div>
   )
