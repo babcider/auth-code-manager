@@ -117,9 +117,6 @@ export default function Login() {
           }}
           onlyThirdPartyProviders={false}
           magicLink={false}
-          queryParams={{
-            returnTo: typeof window !== 'undefined' ? window.location.origin : '/'
-          }}
         />
       </div>
     </div>

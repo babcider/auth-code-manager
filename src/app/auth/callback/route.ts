@@ -124,7 +124,8 @@ export async function GET(request: Request) {
 
     // 활성화된 사용자는 홈페이지로 리다이렉션
     console.log('User is active, redirecting to home')
-    return NextResponse.redirect(requestUrl.origin)
+    const returnTo = requestUrl.searchParams.get('returnTo') || requestUrl.origin
+    return NextResponse.redirect(returnTo)
 
   } catch (error) {
     console.error('Unexpected error in callback:', {
