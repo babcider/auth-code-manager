@@ -18,7 +18,6 @@ export default function Login() {
         console.log('Session check:', session)
         
         if (sessionError) {
-          console.error('Session error:', sessionError)
           throw sessionError
         }
 
@@ -33,19 +32,23 @@ export default function Login() {
           
           if (userError) {
             console.error('User data error:', userError)
-            throw userError
+            await supabase.auth.signOut()
+            toast.error('사용자 정보를 가져오는데 실패했습니다.')
+            return
           }
 
           if (!userData) {
-            console.error('User not found in users table')
+            console.error('User not found')
             await supabase.auth.signOut()
-            throw new Error('사용자 정보를 찾을 수 없습니다.')
+            toast.error('사용자 정보를 찾을 수 없습니다.')
+            return
           }
 
           if (!userData.active) {
             console.error('User is not active')
             await supabase.auth.signOut()
-            throw new Error('비활성화된 계정입니다. 관리자에게 문의하세요.')
+            toast.error('비활성화된 계정입니다. 관리자에게 문의하세요.')
+            return
           }
 
           router.refresh()
@@ -53,7 +56,7 @@ export default function Login() {
         }
       } catch (error) {
         console.error('Error in checkUser:', error)
-        toast.error(error instanceof Error ? error.message : '로그인 중 오류가 발생했습니다.')
+        toast.error('로그인 처리 중 오류가 발생했습니다.')
       }
     }
 
