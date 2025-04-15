@@ -8,7 +8,7 @@ import type { NextRequest } from 'next/server'
  */
 
 // 인증이 필요하지 않은 경로
-const publicUrls = ['/auth/login', '/auth/callback', '/auth/signout']
+const publicUrls = ['/auth/login', '/auth/signout']
 
 export async function middleware(req: NextRequest) {
   try {
@@ -18,6 +18,15 @@ export async function middleware(req: NextRequest) {
     if (publicUrls.some(url => req.nextUrl.pathname.startsWith(url))) {
       console.log('Middleware - Public path, skipping auth check')
       return NextResponse.next()
+    }
+
+    // callback 경로는 특별히 처리
+    if (req.nextUrl.pathname.startsWith('/auth/callback')) {
+      console.log('Middleware - Processing callback')
+      const res = NextResponse.next()
+      const supabase = createMiddlewareClient({ req, res })
+      await supabase.auth.getSession() // 세션 갱신
+      return res
     }
 
     const res = NextResponse.next()
