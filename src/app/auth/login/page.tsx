@@ -5,6 +5,7 @@ import { Auth } from '@supabase/auth-ui-react'
 import { ThemeSupa } from '@supabase/auth-ui-shared'
 import { useRouter } from 'next/navigation'
 import { useEffect } from 'react'
+import { toast } from 'react-hot-toast'
 
 export default function Login() {
   const supabase = createClientComponentClient()
@@ -13,50 +14,46 @@ export default function Login() {
   useEffect(() => {
     const checkUser = async () => {
       try {
-        console.log('세션 체크 시작...')
         const { data: { session }, error: sessionError } = await supabase.auth.getSession()
-        console.log('세션 데이터:', session)
+        console.log('Session check:', session)
         
         if (sessionError) {
-          console.error('세션 에러:', sessionError)
-          return
+          console.error('Session error:', sessionError)
+          throw sessionError
         }
 
         if (session?.user) {
-          console.log('사용자 정보 조회 시작...')
           const { data: userData, error: userError } = await supabase
             .from('users')
             .select('*')
             .eq('id', session.user.id)
             .single()
 
-          console.log('사용자 데이터:', userData)
-          console.log('사용자 에러:', userError)
-
+          console.log('User data:', userData)
+          
           if (userError) {
-            console.error('사용자 정보 조회 실패:', userError)
-            await supabase.auth.signOut()
-            return
+            console.error('User data error:', userError)
+            throw userError
           }
 
           if (!userData) {
-            console.error('사용자 정보가 없음')
+            console.error('User not found in users table')
             await supabase.auth.signOut()
-            return
+            throw new Error('사용자 정보를 찾을 수 없습니다.')
           }
 
           if (!userData.active) {
-            console.error('비활성화된 사용자')
+            console.error('User is not active')
             await supabase.auth.signOut()
-            return
+            throw new Error('비활성화된 계정입니다. 관리자에게 문의하세요.')
           }
 
-          console.log('로그인 성공, 리다이렉트 시작...')
-          router.push('/system')
           router.refresh()
+          router.push('/system')
         }
       } catch (error) {
-        console.error('예상치 못한 에러:', error)
+        console.error('Error in checkUser:', error)
+        toast.error(error instanceof Error ? error.message : '로그인 중 오류가 발생했습니다.')
       }
     }
 
