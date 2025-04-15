@@ -60,9 +60,9 @@ export default function Login() {
             return
           }
 
-          console.log('User is active, proceeding to system page')
+          console.log('User is active, proceeding to home page')
           router.refresh()
-          router.push('/system')
+          router.push('/')
         }
       } catch (error) {
         console.error('Error in checkUser:', error)
