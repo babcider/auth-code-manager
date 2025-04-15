@@ -6,18 +6,34 @@ import { useEffect, useState } from 'react'
 import { NotificationProvider } from '@/contexts/NotificationContext'
 import Link from 'next/link'
 
+interface UserData {
+  role: string;
+  email: string;
+}
+
 export default function RootLayout({
   children,
 }: {
   children: React.ReactNode
 }) {
   const [session, setSession] = useState<any>(null)
+  const [userData, setUserData] = useState<UserData | null>(null)
   const supabase = createClientComponentClient()
 
   useEffect(() => {
     const getSession = async () => {
       const { data: { session } } = await supabase.auth.getSession()
       setSession(session)
+
+      if (session) {
+        const { data: userData } = await supabase
+          .from('users')
+          .select('role, email')
+          .eq('id', session.user.id)
+          .single()
+        
+        setUserData(userData)
+      }
     }
     getSession()
   }, [])
@@ -44,9 +60,17 @@ export default function RootLayout({
                       >
                         감사 로그
                       </Link>
+                      {userData?.role === 'admin' && (
+                        <Link
+                          href="/admin"
+                          className="flex items-center px-1 pt-1 text-sm font-medium text-gray-500 hover:text-gray-900"
+                        >
+                          사용자 관리
+                        </Link>
+                      )}
                     </div>
                     <div className="flex items-center">
-                      <span className="text-gray-700 mr-4">{session.user.email}</span>
+                      <span className="text-gray-700 mr-4">{userData?.email}</span>
                       <form action="/auth/signout" method="post">
                         <button
                           type="submit"
