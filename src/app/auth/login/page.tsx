@@ -38,9 +38,26 @@ export default function Login() {
           }
 
           if (!userData) {
-            console.error('User not found')
-            await supabase.auth.signOut()
-            toast.error('사용자 정보를 찾을 수 없습니다.')
+            const { error: insertError } = await supabase
+              .from('users')
+              .insert([
+                { 
+                  id: session.user.id,
+                  email: session.user.email,
+                  role: 'user',
+                  active: true
+                }
+              ])
+
+            if (insertError) {
+              console.error('User creation error:', insertError)
+              await supabase.auth.signOut()
+              toast.error('사용자 계정 생성에 실패했습니다.')
+              return
+            }
+
+            router.refresh()
+            router.push('/system')
             return
           }
 
