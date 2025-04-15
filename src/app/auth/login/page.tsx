@@ -117,10 +117,10 @@ export default function Login() {
   useEffect(() => {
     const handleAuthChange = (event: any) => {
       if (event === 'SIGNED_IN') {
-        console.log('Login detected, refreshing page...')
+        console.log('Login detected, refreshing page in 1 second...')
         setTimeout(() => {
           router.refresh()
-        }, 500)
+        }, 1000)
       }
     }
 
