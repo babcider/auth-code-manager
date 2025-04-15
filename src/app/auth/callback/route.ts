@@ -11,12 +11,10 @@ export async function GET(request: Request) {
   
   try {
     const code = requestUrl.searchParams.get('code')
-    const next = requestUrl.searchParams.get('next')
     
     console.log('Auth callback started:', { 
       url: request.url, 
       code: code ? 'exists' : 'none',
-      next,
       timestamp: new Date().toISOString()
     })
 
@@ -27,14 +25,6 @@ export async function GET(request: Request) {
 
     const cookieStore = cookies()
     const supabase = createRouteHandlerClient({ cookies: () => cookieStore })
-    
-    // 현재 세션 확인
-    const { data: { session: currentSession } } = await supabase.auth.getSession()
-    console.log('Current session:', {
-      exists: !!currentSession,
-      userId: currentSession?.user?.id,
-      timestamp: new Date().toISOString()
-    })
     
     // 인증 코드로 세션 교환
     console.log('Exchanging code for session...')
@@ -77,42 +67,55 @@ export async function GET(request: Request) {
     // 신규 사용자인 경우
     if (!userData) {
       console.log('Creating new user record...')
+      
+      // 사용자 데이터 준비
       const newUser = {
         id: session.user.id,
         email: session.user.email,
         role: 'user',
         active: false,
-        provider: session.user.app_metadata?.provider || 'email'
+        provider: session.user.app_metadata?.provider || 'email',
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
       }
-      console.log('New user data:', {
-        ...newUser,
-        timestamp: new Date().toISOString()
-      })
+      
+      console.log('Attempting to insert new user:', newUser)
 
-      const { error: insertError } = await supabase
-        .from('users')
-        .insert([newUser])
+      try {
+        const { error: insertError } = await supabase
+          .from('users')
+          .insert([newUser])
+          .select()
 
-      if (insertError) {
-        console.error('User creation error:', {
-          error: insertError,
-          timestamp: new Date().toISOString()
-        })
+        if (insertError) {
+          console.error('User creation error:', {
+            error: insertError,
+            sql: insertError.details,
+            hint: insertError.hint,
+            code: insertError.code,
+            timestamp: new Date().toISOString()
+          })
+          
+          // RLS 정책 확인을 위한 추가 로그
+          const { data: rls, error: rlsError } = await supabase
+            .rpc('get_my_claims')
+          console.log('Current RLS claims:', { rls, error: rlsError })
+          
+          await supabase.auth.signOut()
+          return NextResponse.redirect(`${requestUrl.origin}/auth/login?error=user_creation`)
+        }
+
+        console.log('New user created successfully, signing out')
+        await supabase.auth.signOut()
+        return NextResponse.redirect(`${requestUrl.origin}/auth/login?message=approval_required`)
+      } catch (insertError) {
+        console.error('Unexpected error during user creation:', insertError)
         await supabase.auth.signOut()
         return NextResponse.redirect(`${requestUrl.origin}/auth/login?error=user_creation`)
       }
-
-      console.log('New user created successfully, signing out')
-      await supabase.auth.signOut()
-      return NextResponse.redirect(`${requestUrl.origin}/auth/login?message=approval_required`)
     }
 
     // 비활성 사용자 체크
-    console.log('User active status:', {
-      active: userData.active,
-      timestamp: new Date().toISOString()
-    })
-    
     if (!userData.active) {
       console.log('User is not active, signing out')
       await supabase.auth.signOut()
@@ -126,6 +129,7 @@ export async function GET(request: Request) {
   } catch (error) {
     console.error('Unexpected error in callback:', {
       error,
+      stack: error instanceof Error ? error.stack : undefined,
       timestamp: new Date().toISOString()
     })
     // 에러 발생 시 세션 정리
