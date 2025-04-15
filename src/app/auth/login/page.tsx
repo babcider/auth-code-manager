@@ -18,7 +18,8 @@ export default function Login() {
         console.log('Session check:', session)
         
         if (sessionError) {
-          throw sessionError
+          console.error('Session error:', sessionError)
+          return
         }
 
         if (session?.user) {
@@ -32,44 +33,16 @@ export default function Login() {
           
           if (userError) {
             console.error('User data error:', userError)
-            await supabase.auth.signOut()
-            toast.error('사용자 정보를 가져오는데 실패했습니다.')
             return
           }
 
-          if (!userData) {
-            const { error: insertError } = await supabase
-              .from('users')
-              .insert([
-                { 
-                  id: session.user.id,
-                  email: session.user.email,
-                  role: 'user',
-                  active: true
-                }
-              ])
-
-            if (insertError) {
-              console.error('User creation error:', insertError)
-              await supabase.auth.signOut()
-              toast.error('사용자 계정 생성에 실패했습니다.')
-              return
-            }
-
+          if (userData?.active) {
             router.refresh()
             router.push('/system')
-            return
-          }
-
-          if (!userData.active) {
-            console.error('User is not active')
+          } else if (userData && !userData.active) {
             await supabase.auth.signOut()
             toast.error('비활성화된 계정입니다. 관리자에게 문의하세요.')
-            return
           }
-
-          router.refresh()
-          router.push('/system')
         }
       } catch (error) {
         console.error('Error in checkUser:', error)
