@@ -1,9 +1,9 @@
-import { createServerActionClient } from '@supabase/auth-helpers-nextjs'
+import { createRouteHandlerClient } from '@supabase/auth-helpers-nextjs'
 import { cookies } from 'next/headers'
 import { NextResponse } from 'next/server'
 
-export async function GET() {
-  const supabase = createServerActionClient({ cookies })
+export async function POST() {
+  const supabase = createRouteHandlerClient({ cookies })
   
   try {
     await supabase.auth.signOut()
