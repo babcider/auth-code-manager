@@ -47,7 +47,7 @@ export default function Login() {
             return
           }
 
-          // 활성화 상태 체크 로직 수정
+          // 활성화 상태 체크 로직
           console.log('User active status:', userData.active)
           console.log('User is_active status:', userData.is_active)
           
@@ -61,8 +61,9 @@ export default function Login() {
           }
 
           console.log('User is active, proceeding to system page')
+          const baseUrl = typeof window !== 'undefined' ? window.location.origin : ''
           router.refresh()
-          router.push('/system')
+          router.push(`${baseUrl}/system`)
         }
       } catch (error) {
         console.error('Error in checkUser:', error)
