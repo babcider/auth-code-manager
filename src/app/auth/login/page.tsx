@@ -3,8 +3,9 @@
 import { createClientComponentClient } from '@supabase/auth-helpers-nextjs'
 import { Auth } from '@supabase/auth-ui-react'
 import { ThemeSupa } from '@supabase/auth-ui-shared'
+import { useRouter } from 'next/navigation'
 import { useSearchParams } from 'next/navigation'
-import { Suspense } from 'react'
+import { Suspense, useEffect } from 'react'
 import { toast, Toaster } from 'react-hot-toast'
 
 // 메시지 처리를 위한 별도의 클라이언트 컴포넌트
@@ -75,8 +76,42 @@ function MessageHandler() {
 
 export default function Login() {
   const supabase = createClientComponentClient()
+  const router = useRouter()
   const baseUrl = 'https://auth-code-manager-one.vercel.app'
   const redirectUrl = `${baseUrl}/auth/callback`
+
+  useEffect(() => {
+    const checkSession = async () => {
+      try {
+        const { data: { session }, error } = await supabase.auth.getSession()
+        if (session) {
+          // 세션이 있으면 사용자 데이터 확인
+          const { data: userData, error: userError } = await supabase
+            .from('users')
+            .select('is_active')
+            .eq('id', session.user.id)
+            .single()
+
+          if (userData?.is_active) {
+            console.log('Active session found, redirecting to home')
+            router.push('/')
+          } else {
+            console.log('User is not active, signing out')
+            await supabase.auth.signOut()
+          }
+        }
+      } catch (error) {
+        console.error('Error checking session:', error)
+      }
+    }
+
+    // 페이지 로드 1초 후 세션 체크
+    const timer = setTimeout(() => {
+      checkSession()
+    }, 1000)
+
+    return () => clearTimeout(timer)
+  }, [supabase, router])
 
   return (
     <div className="flex min-h-screen flex-col items-center justify-center bg-gray-100">
