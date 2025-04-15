@@ -10,147 +10,57 @@ export const dynamic = 'force-dynamic'
  */
 export async function GET(request: Request) {
   const requestUrl = new URL(request.url)
+  const code = requestUrl.searchParams.get('code')
   
+  // 코드가 없으면 로그인 페이지로
+  if (!code) {
+    return NextResponse.redirect(`${requestUrl.origin}/auth/login?error=no_code`)
+  }
+
   try {
-    const code = requestUrl.searchParams.get('code')
-    
-    console.log('Auth callback started:', { 
-      url: request.url, 
-      code: code ? 'exists' : 'none',
-      timestamp: new Date().toISOString()
-    })
-
-    if (!code) {
-      console.log('No auth code provided')
-      return NextResponse.redirect(`${requestUrl.origin}/auth/login?error=no_code`)
-    }
-
-    const cookieStore = cookies()
-    const supabase = createRouteHandlerClient({ cookies: () => cookieStore })
+    const supabase = createRouteHandlerClient({ cookies: () => cookies() })
     
     // 인증 코드로 세션 교환
-    console.log('Exchanging code for session...')
-    const { data: { session }, error: sessionError } = await supabase.auth.exchangeCodeForSession(code)
+    const { error: signInError } = await supabase.auth.exchangeCodeForSession(code)
     
-    if (sessionError) {
-      console.error('Session exchange error:', {
-        error: sessionError,
-        timestamp: new Date().toISOString()
-      })
-      return NextResponse.redirect(`${requestUrl.origin}/auth/login?error=session`)
+    if (signInError) {
+      console.error('Auth error:', signInError)
+      return NextResponse.redirect(`${requestUrl.origin}/auth/login?error=auth_error`)
     }
 
-    if (!session?.user) {
-      console.error('No user in session after exchange')
-      return NextResponse.redirect(`${requestUrl.origin}/auth/login?error=no_user`)
+    // 세션 확인
+    const { data: { session }, error: sessionError } = await supabase.auth.getSession()
+    
+    if (sessionError || !session) {
+      console.error('Session error:', sessionError)
+      return NextResponse.redirect(`${requestUrl.origin}/auth/login?error=session_error`)
     }
 
-    console.log('Session exchange successful:', { 
-      userId: session.user.id,
-      email: session.user.email,
-      provider: session.user.app_metadata?.provider,
-      timestamp: new Date().toISOString()
-    })
-
-    // 사용자 데이터 조회
-    console.log('Checking existing user data...')
+    // 사용자 데이터 확인
     const { data: userData, error: userError } = await supabase
       .from('users')
-      .select('*')
+      .select('is_active')
       .eq('id', session.user.id)
       .single()
 
-    console.log('User data check result:', { 
-      exists: !!userData,
-      error: userError,
-      timestamp: new Date().toISOString()
-    })
-
-    // 신규 사용자인 경우
-    if (!userData) {
-      console.log('Creating new user record...')
-      
-      // 사용자 데이터 준비
-      const newUser = {
-        id: session.user.id,
-        email: session.user.email,
-        role: 'user',
-        is_active: false,
-        provider: session.user.app_metadata?.provider || 'email',
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString()
-      }
-      
-      console.log('Attempting to insert new user:', newUser)
-
-      try {
-        const { error: insertError } = await supabase
-          .from('users')
-          .insert([newUser])
-          .select()
-
-        if (insertError) {
-          console.error('User creation error:', {
-            error: insertError,
-            sql: insertError.details,
-            hint: insertError.hint,
-            code: insertError.code,
-            timestamp: new Date().toISOString()
-          })
-          
-          // RLS 정책 확인을 위한 추가 로그
-          const { data: rls, error: rlsError } = await supabase
-            .rpc('get_my_claims')
-          console.log('Current RLS claims:', { rls, error: rlsError })
-          
-          await supabase.auth.signOut()
-          return NextResponse.redirect(`${requestUrl.origin}/auth/login?error=user_creation`)
-        }
-
-        console.log('New user created successfully, signing out')
-        await supabase.auth.signOut()
-        return NextResponse.redirect(`${requestUrl.origin}/auth/login?message=approval_required`)
-      } catch (insertError) {
-        console.error('Unexpected error during user creation:', insertError)
-        await supabase.auth.signOut()
-        return NextResponse.redirect(`${requestUrl.origin}/auth/login?error=user_creation`)
-      }
+    if (userError || !userData) {
+      console.error('User data error:', userError)
+      await supabase.auth.signOut()
+      return NextResponse.redirect(`${requestUrl.origin}/auth/login?error=user_data`)
     }
 
-    // 비활성 사용자 체크
     if (!userData.is_active) {
-      console.log('User is not active, signing out')
       await supabase.auth.signOut()
       return NextResponse.redirect(`${requestUrl.origin}/auth/login?error=inactive`)
     }
 
-    // 활성화된 사용자는 홈페이지로 리다이렉션
-    console.log('User is active, redirecting to home')
-    const redirectUrl = `${requestUrl.origin}/`
-    console.log('Redirect URL:', redirectUrl)
-    
-    try {
-      const response = NextResponse.redirect(redirectUrl)
-      console.log('Response created successfully:', {
-        status: response.status,
-        headers: Object.fromEntries(response.headers.entries()),
-        url: response.url
-      })
-      return response
-    } catch (redirectError) {
-      console.error('Error during redirect:', redirectError)
-      return NextResponse.redirect(`${requestUrl.origin}/auth/login?error=redirect_failed`)
-    }
+    // 성공시 홈페이지로 리다이렉션
+    const response = NextResponse.redirect(`${requestUrl.origin}/`)
+    response.headers.set('Cache-Control', 'no-store, max-age=0')
+    return response
 
   } catch (error) {
-    console.error('Unexpected error in callback:', {
-      error,
-      stack: error instanceof Error ? error.stack : undefined,
-      timestamp: new Date().toISOString()
-    })
-    // 에러 발생 시 세션 정리
-    const supabase = createRouteHandlerClient({ cookies: () => cookies() })
-    await supabase.auth.signOut()
+    console.error('Unexpected error:', error)
     return NextResponse.redirect(`${requestUrl.origin}/auth/login?error=unknown`)
   }
 } 
