@@ -64,10 +64,12 @@ export default function Login() {
             .single()
 
           if (userData?.is_active) {
-            await logAudit('login', {
-              user_email: user.email,
-              role: userData.role
-            })
+            if (user.email) {
+              await logAudit('login', {
+                user_email: user.email,
+                role: userData.role
+              })
+            }
             router.push('/dashboard')
           } else {
             toast.error('계정이 비활성화되었습니다. 관리자에게 문의하세요.')
