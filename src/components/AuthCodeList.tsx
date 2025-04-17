@@ -113,6 +113,7 @@ export default function AuthCodeList({ initialCodes }: ExtendedAuthCodeListProps
         available_apps: options.available_apps || null,
         available_contents: options.available_contents || null,
         create_time: now,
+        expire_time: null,
         start_time: null,
         last_check_time: null,
         last_check_ip: null,
@@ -123,7 +124,7 @@ export default function AuthCodeList({ initialCodes }: ExtendedAuthCodeListProps
 
       const { data: authCodeData, error: authCodeError } = await supabase
         .from('auth_codes')
-        .insert(insertData)
+        .insert([insertData])
         .select()
         .single();
 
