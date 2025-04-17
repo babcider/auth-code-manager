@@ -99,8 +99,6 @@ export default function AuthCodeList({ initialCodes }: ExtendedAuthCodeListProps
   };
 
   const handleGenerateCode = async () => {
-    let authCodeId = null;
-    
     try {
       setIsLoading(true);
       message.loading('인증 코드를 생성하는 중입니다...', 0);
@@ -108,7 +106,7 @@ export default function AuthCodeList({ initialCodes }: ExtendedAuthCodeListProps
       const currentTime = new Date().toISOString();
       const expireTime = options.expire_time ? new Date(options.expire_time).toISOString() : null;
 
-      // 1. 먼저 auth_codes 테이블에 데이터가 존재하는지 확인
+      // 1. 중복 키 확인
       const { data: existingCode } = await supabase
         .from('auth_codes')
         .select('id')
@@ -138,7 +136,7 @@ export default function AuthCodeList({ initialCodes }: ExtendedAuthCodeListProps
           available_contents: options.available_contents || null,
           expire_time: expireTime
         })
-        .select('*')
+        .select()
         .single();
 
       if (authCodeError) {
@@ -149,51 +147,34 @@ export default function AuthCodeList({ initialCodes }: ExtendedAuthCodeListProps
         throw new Error('인증 코드 생성 실패: 응답 데이터가 없습니다.');
       }
 
-      authCodeId = newAuthCode.id;
-
-      // 3. 생성된 auth_code가 실제로 존재하는지 재확인하고 데이터를 가져옴
-      const { data: verifyCode, error: verifyError } = await supabase
-        .from('auth_codes')
-        .select('*')
-        .eq('id', authCodeId)
-        .single();
-
-      if (verifyError || !verifyCode) {
-        throw new Error('인증 코드 확인 실패: 생성된 코드를 찾을 수 없습니다.');
-      }
-
-      // 4. content_ids가 있는 경우 auth_code_contents 테이블에 데이터 삽입
+      // 3. content_ids가 있는 경우 auth_code_contents 테이블에 데이터 삽입
       if (options.content_ids && options.content_ids.length > 0) {
-        const contentInsertPromises = options.content_ids.map(contentId => 
-          supabase
-            .from('auth_code_contents')
-            .insert({
-              auth_code_id: verifyCode.id, // 확인된 auth_code의 ID 사용
-              content_id: contentId,
-              created_at: currentTime
-            })
-            .select('*')
-        );
+        const contentInsertData = options.content_ids.map(contentId => ({
+          auth_code_id: newAuthCode.id,
+          content_id: contentId,
+          created_at: currentTime
+        }));
 
-        const contentResults = await Promise.all(contentInsertPromises);
-        const contentErrors = contentResults.filter(result => result.error);
+        const { error: contentError } = await supabase
+          .from('auth_code_contents')
+          .insert(contentInsertData);
 
-        if (contentErrors.length > 0) {
-          throw new Error(`콘텐츠 연결 실패: ${contentErrors[0].error?.message}`);
+        if (contentError) {
+          // 콘텐츠 연결 실패 시 생성된 인증 코드 삭제
+          await supabase
+            .from('auth_codes')
+            .delete()
+            .eq('id', newAuthCode.id);
+            
+          throw new Error(`콘텐츠 연결 실패: ${contentError.message}`);
         }
       }
 
-      // 5. 최종 데이터 확인
+      // 4. 최종 데이터 확인 및 조회
       const { data: finalData, error: finalError } = await supabase
-        .from('auth_codes')
-        .select(`
-          *,
-          auth_code_contents (
-            content_id,
-            created_at
-          )
-        `)
-        .eq('id', verifyCode.id)
+        .from('auth_code_content_details')
+        .select('*')
+        .eq('id', newAuthCode.id)
         .single();
 
       if (finalError || !finalData) {
@@ -209,26 +190,6 @@ export default function AuthCodeList({ initialCodes }: ExtendedAuthCodeListProps
     } catch (error) {
       console.error('Error in handleGenerateCode:', error);
       message.destroy();
-
-      // 에러 발생 시 롤백
-      if (authCodeId) {
-        try {
-          // 먼저 auth_code_contents 삭제
-          await supabase
-            .from('auth_code_contents')
-            .delete()
-            .eq('auth_code_id', authCodeId);
-
-          // 그 다음 auth_codes 삭제
-          await supabase
-            .from('auth_codes')
-            .delete()
-            .eq('id', authCodeId);
-        } catch (rollbackError) {
-          console.error('Rollback failed:', rollbackError);
-        }
-      }
-
       message.error(error instanceof Error ? error.message : '인증 코드 생성 중 오류가 발생했습니다.');
     } finally {
       setIsLoading(false);
