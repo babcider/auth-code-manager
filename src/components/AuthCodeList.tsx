@@ -94,34 +94,45 @@ export default function AuthCodeList({ initialCodes }: ExtendedAuthCodeListProps
         throw new Error('인증 세션이 만료되었습니다.');
       }
 
+      console.log('Generating code with options:', options);
+
       const now = new Date().toISOString();
       const newCodeId = crypto.randomUUID();
+      const insertData = {
+        id: newCodeId,
+        key: options.key,
+        setup_key: options.setup_key || null,
+        unity_key: options.unity_key || null,
+        institution_name: options.institution_name || null,
+        agency: options.agency || null,
+        memo: options.memo || null,
+        program_update: options.program_update || null,
+        is_active: options.is_active,
+        is_unlimit: options.is_unlimit,
+        local_max_count: options.local_max_count,
+        available_apps: options.available_apps || null,
+        available_contents: options.available_contents || null,
+        create_time: now,
+        start_time: null,
+        last_check_time: null,
+        last_check_ip: null,
+        run_count: 0
+      };
+
+      console.log('Inserting data:', insertData);
+
       const { data: authCodeData, error: authCodeError } = await supabase
         .from('auth_codes')
-        .insert({
-          id: newCodeId,
-          key: options.key,
-          setup_key: options.setup_key || null,
-          unity_key: options.unity_key || null,
-          institution_name: options.institution_name || null,
-          agency: options.agency || null,
-          memo: options.memo || null,
-          program_update: options.program_update || null,
-          is_active: options.is_active,
-          is_unlimit: options.is_unlimit,
-          local_max_count: options.local_max_count,
-          available_apps: options.available_apps || null,
-          available_contents: options.available_contents || null,
-          create_time: now,
-          start_time: null,
-          last_check_time: null,
-          last_check_ip: null,
-          run_count: 0
-        })
+        .insert(insertData)
         .select()
         .single();
 
-      if (authCodeError) throw authCodeError;
+      if (authCodeError) {
+        console.error('Error details:', authCodeError);
+        throw authCodeError;
+      }
+
+      console.log('Inserted auth code:', authCodeData);
 
       // content_ids가 있다면 auth_code_contents 테이블에 관계 추가
       if (options.content_ids && options.content_ids.length > 0) {
@@ -132,11 +143,16 @@ export default function AuthCodeList({ initialCodes }: ExtendedAuthCodeListProps
           created_at: now
         }));
 
+        console.log('Inserting content relations:', contentRelations);
+
         const { error: contentError } = await supabase
           .from('auth_code_contents')
           .insert(contentRelations);
 
-        if (contentError) throw contentError;
+        if (contentError) {
+          console.error('Content relation error:', contentError);
+          throw contentError;
+        }
       }
 
       // 새로운 코드를 AuthCodeView로 변환하여 목록에 추가
@@ -156,7 +172,11 @@ export default function AuthCodeList({ initialCodes }: ExtendedAuthCodeListProps
       }
     } catch (error) {
       console.error('Error generating code:', error);
-      alert('코드 생성 중 오류가 발생했습니다.');
+      if (error instanceof Error) {
+        alert(`코드 생성 중 오류가 발생했습니다: ${error.message}`);
+      } else {
+        alert('코드 생성 중 알 수 없는 오류가 발생했습니다.');
+      }
     }
   };
 
