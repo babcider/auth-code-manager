@@ -10,11 +10,11 @@ interface CodeOptions {
   count?: number;
 }
 
-// 데이터베이스 제약조건에 맞는 문자 집합
+// 데이터베이스 제약조건에 맞는 문자 집합 (I, O와 0, 1 제외)
 const VALID_CHARS = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
 
 export function generateCode(options: CodeOptions): string {
-  const length = options.length || 8
+  const length = options.length || 16  // 기본 길이를 16으로 변경
   let code = ''
 
   for (let i = 0; i < length; i++) {
@@ -44,22 +44,16 @@ function generateRandomString(length: number, charset: string): string {
 export function generateAuthCodes(options: CodeOptions): string[] {
   const {
     count = 1,
-    length = 8,
+    length = 16,  // 기본 길이를 16으로 변경
     prefix = '',
     suffix = '',
     useUppercase = true,
-    useLowercase = true,
+    useLowercase = false,  // 기본값을 false로 변경
     useNumbers = true
   } = options;
 
-  let charset = '';
-  if (useUppercase) charset += 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
-  if (useLowercase) charset += 'abcdefghijklmnopqrstuvwxyz';
-  if (useNumbers) charset += '0123456789';
-
-  if (charset === '') {
-    charset = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
-  }
+  // 고정된 문자 집합 사용
+  const charset = VALID_CHARS;
 
   const codes: string[] = [];
   for (let i = 0; i < count; i++) {
