@@ -106,7 +106,7 @@ export default function AuthCodeList({ initialCodes }: ExtendedAuthCodeListProps
       const currentTime = new Date().toISOString();
       const expireTime = options.expire_time ? new Date(options.expire_time).toISOString() : null;
 
-      // auth_codes 테이블에 데이터 삽입
+      // 1. auth_codes 테이블에 데이터 삽입
       const { data: authCodeData, error: authCodeError } = await supabase
         .from('auth_codes')
         .insert({
@@ -125,8 +125,8 @@ export default function AuthCodeList({ initialCodes }: ExtendedAuthCodeListProps
           available_contents: options.available_contents || null,
           expire_time: expireTime
         })
-        .select('id')
-        .maybeSingle();
+        .select('*')
+        .single();
 
       if (authCodeError) {
         throw new Error(`인증 코드 생성 실패: ${authCodeError.message}`);
@@ -136,27 +136,63 @@ export default function AuthCodeList({ initialCodes }: ExtendedAuthCodeListProps
         throw new Error('인증 코드 생성 실패: 응답 데이터가 없습니다.');
       }
 
-      // content_ids가 있는 경우 auth_code_contents 테이블에 데이터 삽입
+      // 2. 생성된 auth_code가 실제로 존재하는지 확인
+      const { data: verifyData, error: verifyError } = await supabase
+        .from('auth_codes')
+        .select('*')
+        .eq('id', authCodeData.id)
+        .single();
+
+      if (verifyError || !verifyData) {
+        throw new Error('인증 코드 확인 실패: 생성된 코드를 찾을 수 없습니다.');
+      }
+
+      // 3. content_ids가 있는 경우 auth_code_contents 테이블에 데이터 삽입
       if (options.content_ids && options.content_ids.length > 0) {
-        const contentInserts = options.content_ids.map(contentId => ({
-          auth_code_id: authCodeData.id,
-          content_id: contentId,
-          created_at: currentTime
-        }));
+        // 각 content_id를 순차적으로 삽입
+        for (const contentId of options.content_ids) {
+          const { error: contentError } = await supabase
+            .from('auth_code_contents')
+            .insert({
+              auth_code_id: authCodeData.id,
+              content_id: contentId,
+              created_at: currentTime
+            })
+            .select()
+            .single();
 
-        const { error: contentsError } = await supabase
-          .from('auth_code_contents')
-          .insert(contentInserts);
+          if (contentError) {
+            // 롤백: auth_code_contents 테이블의 기존 데이터 삭제
+            await supabase
+              .from('auth_code_contents')
+              .delete()
+              .eq('auth_code_id', authCodeData.id);
 
-        if (contentsError) {
-          // 롤백: auth_codes 데이터 삭제
-          await supabase
-            .from('auth_codes')
-            .delete()
-            .eq('id', authCodeData.id);
-          
-          throw new Error(`인증 코드 콘텐츠 생성 실패: ${contentsError.message}`);
+            // 롤백: auth_codes 테이블의 데이터 삭제
+            await supabase
+              .from('auth_codes')
+              .delete()
+              .eq('id', authCodeData.id);
+
+            throw new Error(`인증 코드 콘텐츠 생성 실패 (ID: ${contentId}): ${contentError.message}`);
+          }
         }
+      }
+
+      // 4. 최종 확인
+      const { data: finalData, error: finalError } = await supabase
+        .from('auth_codes')
+        .select(`
+          *,
+          auth_code_contents (
+            content_id
+          )
+        `)
+        .eq('id', authCodeData.id)
+        .single();
+
+      if (finalError || !finalData) {
+        throw new Error('최종 확인 실패: 생성된 데이터를 확인할 수 없습니다.');
       }
 
       message.destroy();
