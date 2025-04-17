@@ -138,7 +138,7 @@ export default function AuthCodeList({ initialCodes }: ExtendedAuthCodeListProps
           available_contents: options.available_contents || null,
           expire_time: expireTime
         })
-        .select('id')
+        .select('*')
         .single();
 
       if (authCodeError) {
@@ -151,10 +151,10 @@ export default function AuthCodeList({ initialCodes }: ExtendedAuthCodeListProps
 
       authCodeId = newAuthCode.id;
 
-      // 3. 생성된 auth_code가 실제로 존재하는지 재확인
+      // 3. 생성된 auth_code가 실제로 존재하는지 재확인하고 데이터를 가져옴
       const { data: verifyCode, error: verifyError } = await supabase
         .from('auth_codes')
-        .select('id')
+        .select('*')
         .eq('id', authCodeId)
         .single();
 
@@ -164,22 +164,22 @@ export default function AuthCodeList({ initialCodes }: ExtendedAuthCodeListProps
 
       // 4. content_ids가 있는 경우 auth_code_contents 테이블에 데이터 삽입
       if (options.content_ids && options.content_ids.length > 0) {
-        // 각 content_id를 개별적으로 삽입
-        for (const contentId of options.content_ids) {
-          const { error: contentError } = await supabase
+        const contentInsertPromises = options.content_ids.map(contentId => 
+          supabase
             .from('auth_code_contents')
             .insert({
-              auth_code_id: authCodeId,
+              auth_code_id: verifyCode.id, // 확인된 auth_code의 ID 사용
               content_id: contentId,
               created_at: currentTime
-            });
+            })
+            .select('*')
+        );
 
-          if (contentError) {
-            throw new Error(`콘텐츠 연결 실패 (ID: ${contentId}): ${contentError.message}`);
-          }
+        const contentResults = await Promise.all(contentInsertPromises);
+        const contentErrors = contentResults.filter(result => result.error);
 
-          // 각 삽입 후 짧은 지연
-          await new Promise(resolve => setTimeout(resolve, 100));
+        if (contentErrors.length > 0) {
+          throw new Error(`콘텐츠 연결 실패: ${contentErrors[0].error?.message}`);
         }
       }
 
@@ -189,10 +189,11 @@ export default function AuthCodeList({ initialCodes }: ExtendedAuthCodeListProps
         .select(`
           *,
           auth_code_contents (
-            content_id
+            content_id,
+            created_at
           )
         `)
-        .eq('id', authCodeId)
+        .eq('id', verifyCode.id)
         .single();
 
       if (finalError || !finalData) {
