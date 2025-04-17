@@ -99,17 +99,14 @@ export default function AuthCodeList({ initialCodes }: ExtendedAuthCodeListProps
   };
 
   const handleGenerateCode = async () => {
-    let createdAuthCodeId: string | null = null;
-
     try {
       setIsLoading(true);
       message.loading('인증 코드를 생성하는 중입니다...', 0);
 
-      // 현재 시간을 ISO 문자열로 변환
       const currentTime = new Date().toISOString();
       const expireTime = options.expire_time ? new Date(options.expire_time).toISOString() : null;
 
-      // 1. auth_codes 테이블에 데이터 삽입 시도
+      // auth_codes 테이블에 데이터 삽입
       const { data: authCodeData, error: authCodeError } = await supabase
         .from('auth_codes')
         .insert({
@@ -129,7 +126,7 @@ export default function AuthCodeList({ initialCodes }: ExtendedAuthCodeListProps
           expire_time: expireTime
         })
         .select('id')
-        .single();
+        .maybeSingle();
 
       if (authCodeError) {
         throw new Error(`인증 코드 생성 실패: ${authCodeError.message}`);
@@ -139,52 +136,27 @@ export default function AuthCodeList({ initialCodes }: ExtendedAuthCodeListProps
         throw new Error('인증 코드 생성 실패: 응답 데이터가 없습니다.');
       }
 
-      createdAuthCodeId = authCodeData.id;
-
-      // 2. 생성된 auth_code가 실제로 존재하는지 확인
-      const { data: verifyData, error: verifyError } = await supabase
-        .from('auth_codes')
-        .select('id')
-        .eq('id', createdAuthCodeId)
-        .single();
-
-      if (verifyError || !verifyData) {
-        throw new Error('인증 코드 확인 실패: 생성된 코드를 찾을 수 없습니다.');
-      }
-
-      // 3. content_ids가 있는 경우 auth_code_contents 테이블에 데이터 삽입
+      // content_ids가 있는 경우 auth_code_contents 테이블에 데이터 삽입
       if (options.content_ids && options.content_ids.length > 0) {
-        const contentPromises = options.content_ids.map(async (contentId) => {
-          const { error } = await supabase
-            .from('auth_code_contents')
-            .insert({
-              auth_code_id: createdAuthCodeId,
-              content_id: contentId,
-              created_at: currentTime
-            });
+        const contentInserts = options.content_ids.map(contentId => ({
+          auth_code_id: authCodeData.id,
+          content_id: contentId,
+          created_at: currentTime
+        }));
 
-          if (error) {
-            throw new Error(`콘텐츠 연결 실패 (ID: ${contentId}): ${error.message}`);
-          }
-        });
+        const { error: contentsError } = await supabase
+          .from('auth_code_contents')
+          .insert(contentInserts);
 
-        await Promise.all(contentPromises);
-      }
-
-      // 4. 최종 확인
-      const { data: finalCheck, error: finalError } = await supabase
-        .from('auth_codes')
-        .select(`
-          *,
-          auth_code_contents (
-            content_id
-          )
-        `)
-        .eq('id', createdAuthCodeId)
-        .single();
-
-      if (finalError || !finalCheck) {
-        throw new Error('최종 확인 실패: 생성된 데이터를 확인할 수 없습니다.');
+        if (contentsError) {
+          // 롤백: auth_codes 데이터 삭제
+          await supabase
+            .from('auth_codes')
+            .delete()
+            .eq('id', authCodeData.id);
+          
+          throw new Error(`인증 코드 콘텐츠 생성 실패: ${contentsError.message}`);
+        }
       }
 
       message.destroy();
@@ -196,26 +168,6 @@ export default function AuthCodeList({ initialCodes }: ExtendedAuthCodeListProps
     } catch (error) {
       console.error('Error in handleGenerateCode:', error);
       message.destroy();
-      
-      // 에러 발생 시 롤백
-      if (createdAuthCodeId) {
-        try {
-          // 먼저 auth_code_contents 삭제
-          await supabase
-            .from('auth_code_contents')
-            .delete()
-            .eq('auth_code_id', createdAuthCodeId);
-
-          // 그 다음 auth_codes 삭제
-          await supabase
-            .from('auth_codes')
-            .delete()
-            .eq('id', createdAuthCodeId);
-        } catch (rollbackError) {
-          console.error('Rollback failed:', rollbackError);
-        }
-      }
-
       message.error(error instanceof Error ? error.message : '인증 코드 생성 중 오류가 발생했습니다.');
     } finally {
       setIsLoading(false);
