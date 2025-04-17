@@ -2,7 +2,14 @@ import { createClientComponentClient } from '@supabase/auth-helpers-nextjs'
 
 export type AuditAction = 'create' | 'update' | 'delete' | 'bulk_delete' | 'export' | 'login' | 'logout'
 
-export async function logAudit(action: AuditAction, details: any) {
+interface AuditDetails {
+  code: string;
+  institution_name?: string | null;
+  agency?: string | null;
+  changes?: any;
+}
+
+export async function logAudit(action: AuditAction, details: AuditDetails) {
   const supabase = createClientComponentClient()
   
   const { data: { session } } = await supabase.auth.getSession()

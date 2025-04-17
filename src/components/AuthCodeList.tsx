@@ -23,20 +23,22 @@ import GenerateCodeModal from './GenerateCodeModal';
 import EditCodeModal from './EditCodeModal';
 import { logAudit } from '@/lib/audit';
 
-type DbAuthCode = Database['public']['Tables']['auth_code_content_details']['Row'];
+type DbAuthCode = Database['public']['Views']['auth_code_content_details']['Row'];
 
 const mapToAuthCodeView = (dbCode: DbAuthCode): AuthCodeView => ({
   ...dbCode,
-  content: (dbCode.contents || []).map(content => ({
-    id: content.id.toString(),
-    code_id: dbCode.id,
-    content: JSON.stringify(content),
-    created_at: dbCode.created_at,
-    updated_at: dbCode.updated_at
-  }))
+  content: [],
+  created_at: dbCode.create_time,
+  updated_at: undefined,
+  contents: [],
+  is_used: false
 });
 
-export default function AuthCodeList({ initialCodes }: AuthCodeListProps) {
+interface ExtendedAuthCodeListProps {
+  initialCodes: AuthCodeView[];
+}
+
+export default function AuthCodeList({ initialCodes }: ExtendedAuthCodeListProps) {
   const [codes, setCodes] = useState<AuthCodeView[]>(initialCodes);
   const [selectedCode, setSelectedCode] = useState<AuthCodeView | null>(null);
   const [showGenerateModal, setShowGenerateModal] = useState(false);
@@ -87,7 +89,7 @@ export default function AuthCodeList({ initialCodes }: AuthCodeListProps) {
 
       const now = new Date().toISOString();
       const { data: authCodeData, error: authCodeError } = await supabase
-        .from('auth_code_content_details')
+        .from('auth_codes')
         .insert({
           key: options.key,
           setup_key: options.setup_key || null,
@@ -97,27 +99,18 @@ export default function AuthCodeList({ initialCodes }: AuthCodeListProps) {
           program_update: options.program_update || null,
           is_active: options.is_active,
           is_unlimit: options.is_unlimit,
-          local_max_count: options.local_max_count,
-          content_ids: options.content_ids || [],
+          local_max_count: options.local_max_count || null,
           created_by: session.session.user.id,
           updated_by: session.session.user.id,
-          contents: [],
-          status: 'active',
-          created_at: now,
-          updated_at: now,
-          create_time: now,
-          run_count: 0,
-          is_used: false,
-          content_names: [],
-          app_types: []
-        } as Database['public']['Tables']['auth_code_content_details']['Insert'])
+          create_time: now
+        })
         .select()
         .single();
 
       if (authCodeError) throw authCodeError;
 
       // 새로운 코드를 AuthCodeView로 변환하여 목록에 추가
-      const newCode = mapToAuthCodeView(authCodeData);
+      const newCode = mapToAuthCodeView(authCodeData as DbAuthCode);
       setCodes([newCode, ...codes]);
       setShowGenerateModal(false);
 
@@ -125,8 +118,8 @@ export default function AuthCodeList({ initialCodes }: AuthCodeListProps) {
       try {
         await logAudit('create', {
           code: newCode.id,
-          institution_name: options.institution_name,
-          agency: options.agency
+          institution_name: options.institution_name ?? '',
+          agency: options.agency ?? ''
         });
       } catch (error) {
         console.error('Error logging audit:', error);
@@ -145,13 +138,21 @@ export default function AuthCodeList({ initialCodes }: AuthCodeListProps) {
       }
 
       const now = new Date().toISOString();
+      const updateData = {
+        ...options,
+        setup_key: options.setup_key || null,
+        institution_name: options.institution_name || null,
+        agency: options.agency || null,
+        memo: options.memo || null,
+        program_update: options.program_update || null,
+        local_max_count: options.local_max_count || null,
+        updated_at: now,
+        updated_by: session.session.user.id
+      };
+
       const { data: updatedCode, error: updateError } = await supabase
-        .from('auth_code_content_details')
-        .update({
-          ...options,
-          updated_at: now,
-          updated_by: session.session.user.id
-        })
+        .from('auth_codes')
+        .update(updateData)
         .eq('id', id)
         .select()
         .single();
@@ -160,14 +161,14 @@ export default function AuthCodeList({ initialCodes }: AuthCodeListProps) {
 
       // 수정된 코드로 목록 업데이트
       setCodes(codes.map(code => 
-        code.id === id ? mapToAuthCodeView(updatedCode) : code
+        code.id === id ? mapToAuthCodeView(updatedCode as DbAuthCode) : code
       ));
 
       // 감사 로그 추가
       try {
         await logAudit('update', {
           code: id,
-          changes: options
+          changes: JSON.parse(JSON.stringify(options))
         });
       } catch (error) {
         console.error('Error logging audit:', error);

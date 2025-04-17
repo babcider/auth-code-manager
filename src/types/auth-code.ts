@@ -42,6 +42,9 @@ export interface AuthCodeView extends AuthCode {
   content_names?: string[];
   app_types?: string[];
   contents?: any[];
+  key: string;
+  expires_at?: string;
+  user_email?: string;
 }
 
 export interface AuthCodeContent {
@@ -66,21 +69,23 @@ export interface EditCodeModalProps {
 }
 
 export interface CodeGenerationOptions {
-  setup_key?: string
-  unity_key?: string
-  institution_name?: string
-  agency?: string
-  memo?: string
-  program_update?: string
-  is_active: boolean
-  is_unlimit: boolean
-  expire_time?: string
-  local_max_count?: number
-  available_apps?: string
-  available_contents?: string
+  key: string;
+  setup_key?: string;
+  unity_key?: string;
+  institution_name?: string;
+  agency?: string;
+  memo?: string;
+  program_update?: string;
+  is_active: boolean;
+  is_unlimit: boolean;
+  expire_time?: string;
+  local_max_count?: number;
+  available_apps?: string;
+  available_contents?: string;
+  content_ids?: number[];
 }
 
-export const defaultGenerationOptions: CodeGenerationOptions = {
+export const defaultGenerationOptions: Partial<CodeGenerationOptions> = {
   is_active: true,
   is_unlimit: false,
 }
