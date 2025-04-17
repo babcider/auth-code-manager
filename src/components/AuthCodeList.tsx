@@ -101,24 +101,24 @@ export default function AuthCodeList({ initialCodes }: ExtendedAuthCodeListProps
       const insertData = {
         id: newCodeId,
         key: options.key,
+        is_active: options.is_active ?? true,
+        is_unlimit: options.is_unlimit ?? false,
+        create_time: new Date().toISOString(),
+        created_by: session.session.user.id,
         setup_key: options.setup_key || null,
         unity_key: options.unity_key || null,
         institution_name: options.institution_name || null,
         agency: options.agency || null,
         memo: options.memo || null,
         program_update: options.program_update || null,
-        is_active: options.is_active ?? true,
-        is_unlimit: options.is_unlimit ?? false,
-        local_max_count: options.local_max_count ?? null,
+        local_max_count: options.local_max_count || null,
         available_apps: options.available_apps || null,
         available_contents: options.available_contents || null,
-        create_time: new Date().toISOString(),
         expire_time: options.expire_time || null,
         start_time: null,
         last_check_time: null,
         last_check_ip: null,
-        run_count: 0,
-        created_by: session.session.user.id
+        run_count: 0
       };
 
       console.log('Inserting data:', insertData);
