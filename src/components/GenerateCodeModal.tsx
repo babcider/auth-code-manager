@@ -12,11 +12,11 @@ interface GenerateCodeModalProps {
 
 export default function GenerateCodeModal({ isOpen, onClose, onGenerate }: GenerateCodeModalProps) {
   const [options, setOptions] = useState<CodeGenerationOptions>({
-    key: generateCode({
+    key: `${generateCode({
       length: 8,
       useUppercase: true,
       useNumbers: true,
-    }),
+    })}-${Date.now().toString(16).toUpperCase()}`,
     setup_key: '',
     unity_key: '',
     institution_name: '',
