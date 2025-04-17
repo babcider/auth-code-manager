@@ -101,43 +101,45 @@ export default function AuthCodeList({ initialCodes }: ExtendedAuthCodeListProps
   const handleGenerateCode = async () => {
     try {
       setIsLoading(true);
+      message.loading('인증 코드를 생성하는 중입니다...', 0);
 
       // 현재 시간을 ISO 문자열로 변환
       const currentTime = new Date().toISOString();
       const expireTime = options.expire_time ? new Date(options.expire_time).toISOString() : null;
 
-      // auth_codes 테이블에 데이터 삽입
-      const { data: authCode, error: authCodeError } = await supabase
+      // auth_codes 테이블에 데이터 삽입을 먼저 시도
+      const { data: newAuthCode, error: authCodeError } = await supabase
         .from('auth_codes')
         .insert({
           key: options.key,
           is_active: options.is_active,
           is_unlimit: options.is_unlimit,
           create_time: currentTime,
-          setup_key: options.setup_key,
-          unity_key: options.unity_key,
-          institution_name: options.institution_name,
-          agency: options.agency,
-          memo: options.memo,
-          program_update: options.program_update,
-          local_max_count: options.local_max_count,
-          available_apps: options.available_apps,
-          available_contents: options.available_contents,
+          setup_key: options.setup_key || null,
+          unity_key: options.unity_key || null,
+          institution_name: options.institution_name || null,
+          agency: options.agency || null,
+          memo: options.memo || null,
+          program_update: options.program_update || null,
+          local_max_count: options.local_max_count || null,
+          available_apps: options.available_apps || null,
+          available_contents: options.available_contents || null,
           expire_time: expireTime
         })
         .select('*')
         .single();
 
-      if (authCodeError) {
+      if (authCodeError || !newAuthCode) {
         console.error('Error creating auth code:', authCodeError);
+        message.destroy();
         message.error('인증 코드 생성 중 오류가 발생했습니다.');
         return;
       }
 
       // content_ids가 있는 경우에만 auth_code_contents 테이블에 데이터 삽입
-      if (options.content_ids && options.content_ids.length > 0 && authCode) {
+      if (options.content_ids && options.content_ids.length > 0) {
         const contentInserts = options.content_ids.map(contentId => ({
-          auth_code_id: authCode.id,
+          auth_code_id: newAuthCode.id,
           content_id: contentId,
           created_at: currentTime
         }));
@@ -148,23 +150,27 @@ export default function AuthCodeList({ initialCodes }: ExtendedAuthCodeListProps
 
         if (contentsError) {
           console.error('Error creating auth code contents:', contentsError);
-          // auth_code_contents 삽입 실패 시 auth_codes 데이터도 삭제
+          // 롤백: auth_codes 데이터 삭제
           await supabase
             .from('auth_codes')
             .delete()
-            .eq('id', authCode.id);
+            .eq('id', newAuthCode.id);
+          
+          message.destroy();
           message.error('인증 코드 콘텐츠 생성 중 오류가 발생했습니다.');
           return;
         }
       }
 
-      // 성공적으로 데이터가 삽입된 경우
-      message.success('인증 코드가 생성되었습니다.');
+      message.destroy();
+      message.success('인증 코드가 성공적으로 생성되었습니다.');
       setOptions(defaultOptions);
       setShowGenerateModal(false);
-      refreshData();
+      await refreshData(); // 데이터 새로고침을 기다림
+
     } catch (error) {
       console.error('Error in handleGenerateCode:', error);
+      message.destroy();
       message.error('인증 코드 생성 중 오류가 발생했습니다.');
     } finally {
       setIsLoading(false);
