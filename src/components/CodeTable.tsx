@@ -13,6 +13,7 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
+  AlertDialogTrigger
 } from "@/components/ui/alert-dialog";
 import { format } from 'date-fns';
 import { ko } from 'date-fns/locale';
@@ -107,20 +108,20 @@ export default function CodeTable({
               </td>
               <td className="px-6 py-4">
                 <div className="text-sm text-gray-900">
-                  {code.content_names.map((name, index) => (
+                  {code.content_names?.map((name, index) => (
                     <Badge key={index} variant="outline" className="mr-1 mb-1">
                       {name}
                     </Badge>
-                  ))}
+                  )) || '-'}
                 </div>
               </td>
               <td className="px-6 py-4">
                 <div className="text-sm text-gray-900">
-                  {code.app_types.map((type, index) => (
+                  {code.app_types?.map((type, index) => (
                     <Badge key={index} variant="outline" className="mr-1 mb-1">
                       {type}
                     </Badge>
-                  ))}
+                  )) || '-'}
                 </div>
               </td>
               <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
