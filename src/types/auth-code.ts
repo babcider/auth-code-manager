@@ -25,6 +25,25 @@ export interface AuthCode {
   run_count: number | null
 }
 
+export interface AuthCodeView extends AuthCode {
+  content: {
+    id: string;
+    code_id: string;
+    content: string;
+    created_at: string;
+    updated_at?: string;
+  }[];
+  status?: string;
+  created_at?: string;
+  updated_at?: string;
+  created_by?: string;
+  updated_by?: string;
+  is_used?: boolean;
+  content_names?: string[];
+  app_types?: string[];
+  contents?: any[];
+}
+
 export interface AuthCodeContent {
   id: string
   auth_code_id?: string
