@@ -107,17 +107,18 @@ export default function AuthCodeList({ initialCodes }: ExtendedAuthCodeListProps
         agency: options.agency || null,
         memo: options.memo || null,
         program_update: options.program_update || null,
-        is_active: options.is_active,
-        is_unlimit: options.is_unlimit,
-        local_max_count: options.local_max_count,
+        is_active: options.is_active ?? true,
+        is_unlimit: options.is_unlimit ?? false,
+        local_max_count: options.local_max_count ?? null,
         available_apps: options.available_apps || null,
         available_contents: options.available_contents || null,
-        create_time: now,
-        expire_time: options.expire_time || (options.is_unlimit ? null : new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString()),
+        create_time: new Date().toISOString(),
+        expire_time: options.expire_time || null,
         start_time: null,
         last_check_time: null,
         last_check_ip: null,
-        run_count: 0
+        run_count: 0,
+        created_by: session.session.user.id
       };
 
       console.log('Inserting data:', insertData);
