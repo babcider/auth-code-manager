@@ -11,9 +11,19 @@ export async function POST(request: Request) {
   } = await supabase.auth.getSession()
 
   if (session) {
-    await logAudit('logout', {
-      user_email: session.user.email
-    })
+    if (session.user.email) {
+      // 사용자 역할 정보 조회
+      const { data: userData } = await supabase
+        .from('users')
+        .select('role')
+        .eq('id', session.user.id)
+        .single()
+
+      await logAudit('logout', {
+        user_email: session.user.email,
+        role: userData?.role
+      })
+    }
     await supabase.auth.signOut()
   }
 
