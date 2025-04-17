@@ -136,11 +136,9 @@ export default function AuthCodeList({ initialCodes }: ExtendedAuthCodeListProps
       if (options.expire_time) insertData.expire_time = options.expire_time;
 
       // auth_codes 테이블에 데이터 삽입
-      const { data: authCodeData, error: insertError } = await supabase
+      const { error: insertError } = await supabase
         .from('auth_codes')
-        .insert(insertData)
-        .select('*, users!auth_codes_created_by_fkey(email)')
-        .single();
+        .insert(insertData);
 
       if (insertError) {
         console.error('인증 코드 생성 중 오류 발생:', insertError);
@@ -148,35 +146,42 @@ export default function AuthCodeList({ initialCodes }: ExtendedAuthCodeListProps
         return;
       }
 
-      if (!authCodeData) {
+      // 삽입된 데이터 확인
+      const { data: authCodeData, error: selectError } = await supabase
+        .from('auth_codes')
+        .select('*, users!auth_codes_created_by_fkey(email)')
+        .eq('id', newCodeId)
+        .single();
+
+      if (selectError || !authCodeData) {
         console.error('생성된 인증 코드를 찾을 수 없습니다.');
         toast.error('인증 코드 생성에 실패했습니다.');
+        // 실패 시 롤백
+        await supabase.from('auth_codes').delete().eq('id', newCodeId);
         return;
       }
 
       // 콘텐츠 ID가 있는 경우 auth_code_contents 테이블에 데이터 삽입
       if (options.content_ids && options.content_ids.length > 0) {
-        const contentInsertData = options.content_ids.map(contentId => ({
-          id: crypto.randomUUID(),
-          auth_code_id: newCodeId,
-          content_id: contentId,
-          created_at: now
-        }));
+        // 각 콘텐츠를 개별적으로 삽입
+        for (const contentId of options.content_ids) {
+          const { error: contentInsertError } = await supabase
+            .from('auth_code_contents')
+            .insert({
+              id: crypto.randomUUID(),
+              auth_code_id: newCodeId,
+              content_id: contentId,
+              created_at: now
+            });
 
-        const { error: contentInsertError } = await supabase
-          .from('auth_code_contents')
-          .insert(contentInsertData);
-
-        if (contentInsertError) {
-          // 콘텐츠 삽입 실패 시 auth_codes 데이터도 삭제
-          await supabase
-            .from('auth_codes')
-            .delete()
-            .eq('id', newCodeId);
-            
-          console.error('콘텐츠 연결 중 오류 발생:', contentInsertError);
-          toast.error('콘텐츠 연결에 실패했습니다.');
-          return;
+          if (contentInsertError) {
+            console.error('콘텐츠 연결 중 오류 발생:', contentInsertError);
+            // 실패 시 롤백
+            await supabase.from('auth_codes').delete().eq('id', newCodeId);
+            await supabase.from('auth_code_contents').delete().eq('auth_code_id', newCodeId);
+            toast.error('콘텐츠 연결에 실패했습니다.');
+            return;
+          }
         }
       }
 
