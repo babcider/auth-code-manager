@@ -107,68 +107,28 @@ export default function AuthCodeList({ initialCodes }: ExtendedAuthCodeListProps
       const currentTime = new Date().toISOString();
       const expireTime = options.expire_time ? new Date(options.expire_time).toISOString() : null;
 
-      // 1. auth_codes 테이블에 데이터 삽입
-      const { data: newAuthCode, error: authCodeError } = await supabase
-        .from('auth_codes')
-        .insert({
-          key: options.key,
-          is_active: options.is_active,
-          is_unlimit: options.is_unlimit,
-          create_time: currentTime,
-          setup_key: options.setup_key || null,
-          unity_key: options.unity_key || null,
-          institution_name: options.institution_name || null,
-          agency: options.agency || null,
-          memo: options.memo || null,
-          program_update: options.program_update || null,
-          local_max_count: options.local_max_count || null,
-          available_apps: options.available_apps || null,
-          available_contents: options.available_contents || null,
-          expire_time: expireTime
-        })
-        .select('*')
-        .single();
+      // 저장 프로시저 호출
+      const { data: result, error: procedureError } = await supabase
+        .rpc('create_auth_code_with_contents', {
+          p_key: options.key,
+          p_is_active: options.is_active,
+          p_is_unlimit: options.is_unlimit,
+          p_create_time: currentTime,
+          p_setup_key: options.setup_key,
+          p_unity_key: options.unity_key,
+          p_institution_name: options.institution_name,
+          p_agency: options.agency,
+          p_memo: options.memo,
+          p_program_update: options.program_update,
+          p_local_max_count: options.local_max_count,
+          p_available_apps: options.available_apps,
+          p_available_contents: options.available_contents,
+          p_expire_time: expireTime,
+          p_content_ids: options.content_ids || []
+        });
 
-      if (authCodeError) {
-        throw new Error(`인증 코드 생성 실패: ${authCodeError.message}`);
-      }
-
-      if (!newAuthCode) {
-        throw new Error('인증 코드 생성 실패: 응답 데이터가 없습니다.');
-      }
-
-      // 2. 생성된 auth_code 확인
-      const { data: verifyCode, error: verifyError } = await supabase
-        .from('auth_codes')
-        .select('*')
-        .eq('id', newAuthCode.id)
-        .single();
-
-      if (verifyError || !verifyCode) {
-        throw new Error('인증 코드 확인 실패: 생성된 코드를 찾을 수 없습니다.');
-      }
-
-      // 3. content_ids가 있는 경우 처리
-      if (options.content_ids?.length) {
-        const contentData = options.content_ids.map(contentId => ({
-          auth_code_id: verifyCode.id,
-          content_id: contentId,
-          created_at: currentTime
-        }));
-
-        const { error: contentError } = await supabase
-          .from('auth_code_contents')
-          .insert(contentData);
-
-        if (contentError) {
-          // 롤백
-          await supabase
-            .from('auth_codes')
-            .delete()
-            .eq('id', verifyCode.id);
-          
-          throw new Error(`콘텐츠 연결 실패: ${contentError.message}`);
-        }
+      if (procedureError) {
+        throw new Error(`인증 코드 생성 실패: ${procedureError.message}`);
       }
 
       message.destroy();
