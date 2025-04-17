@@ -10,23 +10,16 @@ interface CodeOptions {
   count?: number;
 }
 
+// 데이터베이스 제약조건에 맞는 문자 집합
+const VALID_CHARS = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+
 export function generateCode(options: CodeOptions): string {
-  const charset = []
-  if (options.useUppercase) charset.push('ABCDEFGHIJKLMNOPQRSTUVWXYZ')
-  if (options.useLowercase) charset.push('abcdefghijklmnopqrstuvwxyz')
-  if (options.useNumbers) charset.push('0123456789')
-
-  if (charset.length === 0) {
-    throw new Error('At least one character set must be selected')
-  }
-
-  const allChars = charset.join('')
-  let code = ''
   const length = options.length || 8
+  let code = ''
 
   for (let i = 0; i < length; i++) {
-    const randomIndex = Math.floor(Math.random() * allChars.length)
-    code += allChars[randomIndex]
+    const randomIndex = Math.floor(Math.random() * VALID_CHARS.length)
+    code += VALID_CHARS[randomIndex]
   }
 
   const prefix = options.prefix || ''
