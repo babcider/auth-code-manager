@@ -136,7 +136,7 @@ export default function AuthCodeList({ initialCodes }: ExtendedAuthCodeListProps
           available_contents: options.available_contents || null,
           expire_time: expireTime
         })
-        .select()
+        .select('*')
         .single();
 
       if (authCodeError) {
@@ -147,34 +147,54 @@ export default function AuthCodeList({ initialCodes }: ExtendedAuthCodeListProps
         throw new Error('인증 코드 생성 실패: 응답 데이터가 없습니다.');
       }
 
-      // 3. content_ids가 있는 경우 auth_code_contents 테이블에 데이터 삽입
+      // 3. 생성된 auth_code 재확인
+      const { data: verifyCode, error: verifyError } = await supabase
+        .from('auth_codes')
+        .select('*')
+        .eq('id', newAuthCode.id)
+        .single();
+
+      if (verifyError || !verifyCode) {
+        throw new Error('인증 코드 확인 실패: 생성된 코드를 찾을 수 없습니다.');
+      }
+
+      // 4. content_ids가 있는 경우 auth_code_contents 테이블에 데이터 삽입
       if (options.content_ids && options.content_ids.length > 0) {
-        const contentInsertData = options.content_ids.map(contentId => ({
-          auth_code_id: newAuthCode.id,
-          content_id: contentId,
-          created_at: currentTime
-        }));
+        // 각 content_id를 개별적으로 삽입
+        for (const contentId of options.content_ids) {
+          const { error: contentError } = await supabase
+            .from('auth_code_contents')
+            .insert({
+              auth_code_id: verifyCode.id,
+              content_id: contentId,
+              created_at: currentTime
+            });
 
-        const { error: contentError } = await supabase
-          .from('auth_code_contents')
-          .insert(contentInsertData);
+          if (contentError) {
+            // 콘텐츠 연결 실패 시 생성된 인증 코드와 이전에 삽입된 콘텐츠 연결 삭제
+            await supabase
+              .from('auth_code_contents')
+              .delete()
+              .eq('auth_code_id', verifyCode.id);
 
-        if (contentError) {
-          // 콘텐츠 연결 실패 시 생성된 인증 코드 삭제
-          await supabase
-            .from('auth_codes')
-            .delete()
-            .eq('id', newAuthCode.id);
-            
-          throw new Error(`콘텐츠 연결 실패: ${contentError.message}`);
+            await supabase
+              .from('auth_codes')
+              .delete()
+              .eq('id', verifyCode.id);
+
+            throw new Error(`콘텐츠 연결 실패 (ID: ${contentId}): ${contentError.message}`);
+          }
+
+          // 각 삽입 사이에 짧은 지연 추가
+          await new Promise(resolve => setTimeout(resolve, 100));
         }
       }
 
-      // 4. 최종 데이터 확인 및 조회
+      // 5. 최종 데이터 확인
       const { data: finalData, error: finalError } = await supabase
         .from('auth_code_content_details')
         .select('*')
-        .eq('id', newAuthCode.id)
+        .eq('id', verifyCode.id)
         .single();
 
       if (finalError || !finalData) {
