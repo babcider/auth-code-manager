@@ -107,7 +107,7 @@ export default function AuthCodeList({ initialCodes }: ExtendedAuthCodeListProps
       const currentTime = new Date().toISOString();
       const expireTime = options.expire_time ? new Date(options.expire_time).toISOString() : null;
 
-      // auth_codes 테이블에 데이터 삽입을 먼저 시도
+      // 트랜잭션 시작
       const { data: newAuthCode, error: authCodeError } = await supabase
         .from('auth_codes')
         .insert({
@@ -136,29 +136,49 @@ export default function AuthCodeList({ initialCodes }: ExtendedAuthCodeListProps
         return;
       }
 
+      // auth_code가 성공적으로 생성되었는지 확인
+      const { data: checkAuthCode, error: checkError } = await supabase
+        .from('auth_codes')
+        .select('*')
+        .eq('id', newAuthCode.id)
+        .single();
+
+      if (checkError || !checkAuthCode) {
+        console.error('Error verifying auth code:', checkError);
+        message.destroy();
+        message.error('인증 코드 생성 확인 중 오류가 발생했습니다.');
+        return;
+      }
+
       // content_ids가 있는 경우에만 auth_code_contents 테이블에 데이터 삽입
       if (options.content_ids && options.content_ids.length > 0) {
-        const contentInserts = options.content_ids.map(contentId => ({
-          auth_code_id: newAuthCode.id,
-          content_id: contentId,
-          created_at: currentTime
-        }));
+        // 각 content_id를 개별적으로 삽입
+        for (const contentId of options.content_ids) {
+          const { error: contentError } = await supabase
+            .from('auth_code_contents')
+            .insert({
+              auth_code_id: newAuthCode.id,
+              content_id: contentId,
+              created_at: currentTime
+            });
 
-        const { error: contentsError } = await supabase
-          .from('auth_code_contents')
-          .insert(contentInserts);
-
-        if (contentsError) {
-          console.error('Error creating auth code contents:', contentsError);
-          // 롤백: auth_codes 데이터 삭제
-          await supabase
-            .from('auth_codes')
-            .delete()
-            .eq('id', newAuthCode.id);
-          
-          message.destroy();
-          message.error('인증 코드 콘텐츠 생성 중 오류가 발생했습니다.');
-          return;
+          if (contentError) {
+            console.error('Error creating auth code content:', contentError);
+            // 롤백: auth_codes 데이터와 이전에 삽입된 auth_code_contents 삭제
+            await supabase
+              .from('auth_code_contents')
+              .delete()
+              .eq('auth_code_id', newAuthCode.id);
+            
+            await supabase
+              .from('auth_codes')
+              .delete()
+              .eq('id', newAuthCode.id);
+            
+            message.destroy();
+            message.error('인증 코드 콘텐츠 생성 중 오류가 발생했습니다.');
+            return;
+          }
         }
       }
 
@@ -166,7 +186,7 @@ export default function AuthCodeList({ initialCodes }: ExtendedAuthCodeListProps
       message.success('인증 코드가 성공적으로 생성되었습니다.');
       setOptions(defaultOptions);
       setShowGenerateModal(false);
-      await refreshData(); // 데이터 새로고침을 기다림
+      await refreshData();
 
     } catch (error) {
       console.error('Error in handleGenerateCode:', error);
