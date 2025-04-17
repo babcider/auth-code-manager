@@ -24,6 +24,7 @@ import EditCodeModal from './EditCodeModal';
 import { logAudit } from '@/lib/audit';
 import { toast } from 'react-hot-toast';
 import { message } from 'antd';
+import { v4 as uuidv4 } from 'uuid';
 
 type DbAuthCode = Database['public']['Views']['auth_code_content_details']['Row'] & {
   status: string;
@@ -105,11 +106,13 @@ export default function AuthCodeList({ initialCodes }: ExtendedAuthCodeListProps
 
       const currentTime = new Date().toISOString();
       const expireTime = options.expire_time ? new Date(options.expire_time).toISOString() : null;
+      const newId = uuidv4();
 
-      // 1. auth_codes 테이블에 데이터 삽입
-      const { data: newAuthCode, error: authCodeError } = await supabase
+      // 1. auth_codes 테이블에 미리 생성한 ID로 데이터 삽입
+      const { error: authCodeError } = await supabase
         .from('auth_codes')
         .insert({
+          id: newId,
           key: options.key,
           is_active: options.is_active,
           is_unlimit: options.is_unlimit,
@@ -124,28 +127,19 @@ export default function AuthCodeList({ initialCodes }: ExtendedAuthCodeListProps
           available_apps: options.available_apps || null,
           available_contents: options.available_contents || null,
           expire_time: expireTime
-        })
-        .select()
-        .single();
+        });
 
       if (authCodeError) {
-        if (authCodeError.code === '23505') { // 중복 키 에러 코드
+        if (authCodeError.code === '23505') {
           throw new Error('이미 존재하는 인증 코드입니다.');
         }
         throw new Error(`인증 코드 생성 실패: ${authCodeError.message}`);
       }
 
-      if (!newAuthCode?.id) {
-        throw new Error('인증 코드 생성 실패: 응답 데이터가 없습니다.');
-      }
-
-      // 2. 잠시 대기하여 데이터베이스 반영 시간 확보
-      await new Promise(resolve => setTimeout(resolve, 1000));
-
-      // 3. content_ids가 있는 경우, 준비된 데이터로 한 번에 삽입
+      // 2. content_ids가 있는 경우 auth_code_contents 테이블에 데이터 삽입
       if (options.content_ids && options.content_ids.length > 0) {
         const contentData = options.content_ids.map(contentId => ({
-          auth_code_id: newAuthCode.id,
+          auth_code_id: newId,
           content_id: contentId,
           created_at: currentTime
         }));
@@ -159,7 +153,7 @@ export default function AuthCodeList({ initialCodes }: ExtendedAuthCodeListProps
           await supabase
             .from('auth_codes')
             .delete()
-            .eq('id', newAuthCode.id);
+            .eq('id', newId);
           
           throw new Error(`콘텐츠 연결 실패: ${contentError.message}`);
         }
