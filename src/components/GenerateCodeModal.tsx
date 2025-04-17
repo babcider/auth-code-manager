@@ -18,13 +18,16 @@ export default function GenerateCodeModal({ isOpen, onClose, onGenerate }: Gener
       useNumbers: true,
     }),
     setup_key: '',
+    unity_key: '',
     institution_name: '',
     agency: '',
     memo: '',
     program_update: '',
     is_active: true,
     is_unlimit: false,
-    local_max_count: 1,
+    local_max_count: null,
+    available_apps: '',
+    available_contents: '',
     content_ids: []
   })
 
