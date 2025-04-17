@@ -23,7 +23,11 @@ import GenerateCodeModal from './GenerateCodeModal';
 import EditCodeModal from './EditCodeModal';
 import { logAudit } from '@/lib/audit';
 
-type DbAuthCode = Database['public']['Views']['auth_code_content_details']['Row'];
+type DbAuthCode = Database['public']['Views']['auth_code_content_details']['Row'] & {
+  status: string;
+};
+
+type Status = 'active' | 'inactive' | 'expired';
 
 const mapToAuthCodeView = (dbCode: DbAuthCode): AuthCodeView => ({
   ...dbCode,
@@ -31,7 +35,8 @@ const mapToAuthCodeView = (dbCode: DbAuthCode): AuthCodeView => ({
   created_at: dbCode.create_time,
   updated_at: undefined,
   contents: [],
-  is_used: false
+  is_used: false,
+  status: dbCode.status
 });
 
 interface ExtendedAuthCodeListProps {
@@ -46,7 +51,7 @@ export default function AuthCodeList({ initialCodes }: ExtendedAuthCodeListProps
   const [editingCode, setEditingCode] = useState<AuthCodeView | null>(null);
   const supabase = createClientComponentClient<Database>();
 
-  const getStatusColor = (status: string) => {
+  const getStatusColor = (status: string): string => {
     switch (status) {
       case 'active':
         return 'bg-green-100 text-green-800';
@@ -59,7 +64,7 @@ export default function AuthCodeList({ initialCodes }: ExtendedAuthCodeListProps
     }
   };
 
-  const getStatusText = (status: string) => {
+  const getStatusText = (status: string): string => {
     switch (status) {
       case 'active':
         return '활성';
@@ -72,7 +77,9 @@ export default function AuthCodeList({ initialCodes }: ExtendedAuthCodeListProps
     }
   };
 
-  const formatDate = (date: string) => {
+  const formatDate = (date: string | undefined | null): string => {
+    if (!date) return '날짜 정보 없음';
+    
     try {
       return formatDistanceToNow(new Date(date), { addSuffix: true, locale: ko });
     } catch (error) {
@@ -217,8 +224,8 @@ export default function AuthCodeList({ initialCodes }: ExtendedAuthCodeListProps
                     <div className="text-sm text-gray-900">{code.institution_name || '-'}</div>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
-                    <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${getStatusColor(code.status)}`}>
-                      {getStatusText(code.status)}
+                    <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${getStatusColor(code.status || 'inactive')}`}>
+                      {getStatusText(code.status || 'inactive')}
                     </span>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
@@ -281,7 +288,7 @@ export default function AuthCodeList({ initialCodes }: ExtendedAuthCodeListProps
                 </div>
                 <div>
                   <h3 className="text-sm font-medium text-gray-500">상태</h3>
-                  <p className="mt-1 text-sm text-gray-900">{getStatusText(selectedCode.status)}</p>
+                  <p className="mt-1 text-sm text-gray-900">{getStatusText(selectedCode.status || 'inactive')}</p>
                 </div>
                 <div>
                   <h3 className="text-sm font-medium text-gray-500">실행 횟수</h3>
