@@ -126,7 +126,7 @@ export default function AuthCodeList({ initialCodes }: ExtendedAuthCodeListProps
           available_contents: options.available_contents || null,
           expire_time: expireTime
         })
-        .select()
+        .select('*')
         .single();
 
       if (authCodeError) {
@@ -137,10 +137,21 @@ export default function AuthCodeList({ initialCodes }: ExtendedAuthCodeListProps
         throw new Error('인증 코드 생성 실패: 응답 데이터가 없습니다.');
       }
 
-      // 2. content_ids가 있는 경우 처리
+      // 2. 생성된 auth_code 확인
+      const { data: verifyCode, error: verifyError } = await supabase
+        .from('auth_codes')
+        .select('*')
+        .eq('id', newAuthCode.id)
+        .single();
+
+      if (verifyError || !verifyCode) {
+        throw new Error('인증 코드 확인 실패: 생성된 코드를 찾을 수 없습니다.');
+      }
+
+      // 3. content_ids가 있는 경우 처리
       if (options.content_ids?.length) {
         const contentData = options.content_ids.map(contentId => ({
-          auth_code_id: newAuthCode.id,
+          auth_code_id: verifyCode.id,
           content_id: contentId,
           created_at: currentTime
         }));
@@ -154,7 +165,7 @@ export default function AuthCodeList({ initialCodes }: ExtendedAuthCodeListProps
           await supabase
             .from('auth_codes')
             .delete()
-            .eq('id', newAuthCode.id);
+            .eq('id', verifyCode.id);
           
           throw new Error(`콘텐츠 연결 실패: ${contentError.message}`);
         }
