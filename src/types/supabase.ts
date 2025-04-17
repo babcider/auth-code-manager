@@ -1,97 +1,47 @@
-export type Json =
-  | string
-  | number
-  | boolean
-  | null
-  | { [key: string]: Json | undefined }
-  | Json[]
-
-export type Database = {
+export interface Database {
   public: {
     Tables: {
       auth_codes: {
         Row: {
           id: string
           key: string
-          setup_key: string | null
-          unity_key: string | null
-          institution_name: string | null
-          agency: string | null
-          memo: string | null
-          program_update: string | null
           is_active: boolean
           is_unlimit: boolean
-          expire_time: string | null
           local_max_count: number | null
-          available_apps: string | null
-          available_contents: string | null
-          create_time: string
-          start_time: string | null
-          last_check_time: string | null
-          last_check_ip: string | null
-          run_count: number | null
+          expire_time: string | null
+          created_at: string
+          updated_at: string
         }
         Insert: {
-          id?: string
           key: string
-          setup_key?: string | null
-          unity_key?: string | null
-          institution_name?: string | null
-          agency?: string | null
-          memo?: string | null
-          program_update?: string | null
           is_active?: boolean
           is_unlimit?: boolean
-          expire_time?: string | null
           local_max_count?: number | null
-          available_apps?: string | null
-          available_contents?: string | null
-          create_time?: string
-          start_time?: string | null
-          last_check_time?: string | null
-          last_check_ip?: string | null
-          run_count?: number | null
+          expire_time?: string | null
         }
         Update: {
-          id?: string
           key?: string
-          setup_key?: string | null
-          unity_key?: string | null
-          institution_name?: string | null
-          agency?: string | null
-          memo?: string | null
-          program_update?: string | null
           is_active?: boolean
           is_unlimit?: boolean
-          expire_time?: string | null
           local_max_count?: number | null
-          available_apps?: string | null
-          available_contents?: string | null
-          create_time?: string
-          start_time?: string | null
-          last_check_time?: string | null
-          last_check_ip?: string | null
-          run_count?: number | null
+          expire_time?: string | null
         }
       }
       auth_code_contents: {
         Row: {
           id: string
-          auth_code_id: string | null
-          content_id: number | null
-          created_at: string | null
+          auth_code_id: string
+          content_id: string
+          created_at: string
+          updated_at: string
         }
         Insert: {
-          id?: string
-          auth_code_id?: string | null
-          content_id?: number | null
-          created_at?: string | null
+          auth_code_id: string
+          content_id: string
         }
         Update: {
-          id?: string
-          auth_code_id?: string | null
-          content_id?: number | null
-          created_at?: string | null
+          auth_code_id?: string
+          content_id?: string
         }
       }
       insol_contents: {
@@ -176,7 +126,29 @@ export type Database = {
       }
     }
     Functions: {
-      [_ in never]: never
+      create_auth_code_with_contents: {
+        Args: {
+          auth_code_data: {
+            key: string
+            is_active: boolean
+            is_unlimit: boolean
+            local_max_count: number | null
+            expire_time: string | null
+          }
+          content_ids: string[]
+        }
+        Returns: {
+          id: string
+          key: string
+          is_active: boolean
+          is_unlimit: boolean
+          local_max_count: number | null
+          expire_time: string | null
+          created_at: string
+          updated_at: string
+          content_ids: string[]
+        }
+      }
     }
     Enums: {
       [_ in never]: never
