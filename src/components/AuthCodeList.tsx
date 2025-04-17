@@ -98,6 +98,7 @@ export default function AuthCodeList({ initialCodes }: ExtendedAuthCodeListProps
       const { data: authCodeData, error: authCodeError } = await supabase
         .from('auth_codes')
         .insert({
+          id: crypto.randomUUID(),
           key: options.key,
           setup_key: options.setup_key || null,
           institution_name: options.institution_name || null,
@@ -109,7 +110,11 @@ export default function AuthCodeList({ initialCodes }: ExtendedAuthCodeListProps
           local_max_count: options.local_max_count || null,
           created_by: session.session.user.id,
           updated_by: session.session.user.id,
-          create_time: now
+          create_time: now,
+          start_time: null,
+          last_check_time: null,
+          last_check_ip: null,
+          run_count: 0
         })
         .select()
         .single();
