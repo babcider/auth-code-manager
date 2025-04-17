@@ -1,6 +1,16 @@
 import { CodeGenerationOptions } from '@/types/auth-code'
 
-export function generateCode(options: CodeGenerationOptions): string {
+interface CodeOptions {
+  length?: number;
+  prefix?: string;
+  suffix?: string;
+  useUppercase?: boolean;
+  useLowercase?: boolean;
+  useNumbers?: boolean;
+  count?: number;
+}
+
+export function generateCode(options: CodeOptions): string {
   const charset = []
   if (options.useUppercase) charset.push('ABCDEFGHIJKLMNOPQRSTUVWXYZ')
   if (options.useLowercase) charset.push('abcdefghijklmnopqrstuvwxyz')
@@ -12,13 +22,16 @@ export function generateCode(options: CodeGenerationOptions): string {
 
   const allChars = charset.join('')
   let code = ''
+  const length = options.length || 8
 
-  for (let i = 0; i < options.length; i++) {
+  for (let i = 0; i < length; i++) {
     const randomIndex = Math.floor(Math.random() * allChars.length)
     code += allChars[randomIndex]
   }
 
-  return `${options.prefix}${code}${options.suffix}`
+  const prefix = options.prefix || ''
+  const suffix = options.suffix || ''
+  return `${prefix}${code}${suffix}`
 }
 
 export function calculateExpiryDate(hours: number): string {
@@ -35,21 +48,21 @@ function generateRandomString(length: number, charset: string): string {
   return result;
 }
 
-export function generateAuthCodes(options: CodeGenerationOptions): string[] {
+export function generateAuthCodes(options: CodeOptions): string[] {
   const {
     count = 1,
     length = 8,
     prefix = '',
     suffix = '',
-    uppercase = true,
-    lowercase = true,
-    numbers = true
+    useUppercase = true,
+    useLowercase = true,
+    useNumbers = true
   } = options;
 
   let charset = '';
-  if (uppercase) charset += 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
-  if (lowercase) charset += 'abcdefghijklmnopqrstuvwxyz';
-  if (numbers) charset += '0123456789';
+  if (useUppercase) charset += 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+  if (useLowercase) charset += 'abcdefghijklmnopqrstuvwxyz';
+  if (useNumbers) charset += '0123456789';
 
   if (charset === '') {
     charset = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';

@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import { CodeGenerationOptions } from '@/types/auth-code'
+import { generateCode } from '@/lib/auth-code'
 
 interface GenerateCodeModalProps {
   isOpen: boolean
@@ -11,7 +12,11 @@ interface GenerateCodeModalProps {
 
 export default function GenerateCodeModal({ isOpen, onClose, onGenerate }: GenerateCodeModalProps) {
   const [options, setOptions] = useState<CodeGenerationOptions>({
-    key: '',
+    key: generateCode({
+      length: 8,
+      useUppercase: true,
+      useNumbers: true,
+    }),
     setup_key: '',
     institution_name: '',
     agency: '',
