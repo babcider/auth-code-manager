@@ -62,10 +62,10 @@ export interface AuthCodeListProps {
 }
 
 export interface EditCodeModalProps {
-  code: AuthCode | null
   isOpen: boolean
   onClose: () => void
-  onUpdate: (code: AuthCode) => void
+  onUpdate: (id: string, options: Partial<CodeGenerationOptions>) => Promise<void>
+  code: AuthCodeView | null
 }
 
 export interface CodeGenerationOptions {
@@ -79,7 +79,7 @@ export interface CodeGenerationOptions {
   is_active: boolean;
   is_unlimit: boolean;
   expire_time?: string;
-  local_max_count?: number;
+  local_max_count?: number | null;
   available_apps?: string;
   available_contents?: string;
   content_ids?: number[];

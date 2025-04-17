@@ -20,7 +20,7 @@ export default function EditCodeModal({ isOpen, onClose, onUpdate, code }: EditC
     program_update: '',
     is_active: true,
     is_unlimit: false,
-    local_max_count: 1,
+    local_max_count: null,
   })
 
   const [isLoading, setIsLoading] = useState(false)
@@ -167,8 +167,14 @@ export default function EditCodeModal({ isOpen, onClose, onUpdate, code }: EditC
               </label>
               <input
                 type="number"
-                value={options.local_max_count}
-                onChange={(e) => setOptions({ ...options, local_max_count: parseInt(e.target.value) })}
+                value={options.local_max_count === null ? '' : options.local_max_count}
+                onChange={(e) => {
+                  const value = e.target.value;
+                  setOptions({ 
+                    ...options, 
+                    local_max_count: value === '' ? null : parseInt(value)
+                  });
+                }}
                 className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                 min={1}
                 disabled={options.is_unlimit}
