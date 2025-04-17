@@ -22,6 +22,7 @@ import { Database } from '@/types/supabase';
 import GenerateCodeModal from './GenerateCodeModal';
 import EditCodeModal from './EditCodeModal';
 import { logAudit } from '@/lib/audit';
+import { toast } from 'react-hot-toast';
 
 type DbAuthCode = Database['public']['Views']['auth_code_content_details']['Row'] & {
   status: string;
@@ -94,91 +95,116 @@ export default function AuthCodeList({ initialCodes }: ExtendedAuthCodeListProps
         throw new Error('인증 세션이 만료되었습니다.');
       }
 
-      console.log('Generating code with options:', options);
-
       const now = new Date().toISOString();
       const newCodeId = crypto.randomUUID();
-      const insertData = {
+      
+      // 기본값 설정
+      const insertData: Database['public']['Tables']['auth_codes']['Insert'] = {
         id: newCodeId,
         key: options.key,
-        is_active: options.is_active ?? true,
-        is_unlimit: options.is_unlimit ?? false,
-        create_time: new Date().toISOString(),
-        created_by: session.session.user.id,
-        setup_key: options.setup_key || null,
-        unity_key: options.unity_key || null,
-        institution_name: options.institution_name || null,
-        agency: options.agency || null,
-        memo: options.memo || null,
-        program_update: options.program_update || null,
-        local_max_count: options.local_max_count || null,
-        available_apps: options.available_apps || null,
-        available_contents: options.available_contents || null,
-        expire_time: options.expire_time || null,
+        is_active: true,
+        is_unlimit: false,
+        create_time: now,
+        setup_key: null,
+        unity_key: null,
+        institution_name: null,
+        agency: null,
+        memo: null,
+        program_update: null,
+        local_max_count: null,
+        available_apps: null,
+        available_contents: null,
+        expire_time: null,
         start_time: null,
         last_check_time: null,
         last_check_ip: null,
-        run_count: 0
+        run_count: null
       };
 
-      console.log('Inserting data:', insertData);
+      // 옵션에서 제공된 값으로 덮어쓰기
+      if (options.is_active !== undefined) insertData.is_active = options.is_active;
+      if (options.is_unlimit !== undefined) insertData.is_unlimit = options.is_unlimit;
+      if (options.setup_key) insertData.setup_key = options.setup_key;
+      if (options.unity_key) insertData.unity_key = options.unity_key;
+      if (options.institution_name) insertData.institution_name = options.institution_name;
+      if (options.agency) insertData.agency = options.agency;
+      if (options.memo) insertData.memo = options.memo;
+      if (options.program_update) insertData.program_update = options.program_update;
+      if (options.local_max_count !== undefined) insertData.local_max_count = options.local_max_count;
+      if (options.available_apps) insertData.available_apps = options.available_apps;
+      if (options.available_contents) insertData.available_contents = options.available_contents;
+      if (options.expire_time) insertData.expire_time = options.expire_time;
 
-      const { data: authCodeData, error: authCodeError } = await supabase
-        .from('auth_codes')
-        .insert([insertData])
-        .select()
-        .single();
-
-      if (authCodeError) {
-        console.error('Error details:', authCodeError);
-        throw authCodeError;
-      }
-
-      console.log('Inserted auth code:', authCodeData);
-
-      // content_ids가 있다면 auth_code_contents 테이블에 관계 추가
-      if (options.content_ids && options.content_ids.length > 0) {
-        const contentRelations = options.content_ids.map(contentId => ({
-          id: crypto.randomUUID(),
-          auth_code_id: newCodeId,
-          content_id: contentId,
-          created_at: now
-        }));
-
-        console.log('Inserting content relations:', contentRelations);
-
-        const { error: contentError } = await supabase
-          .from('auth_code_contents')
-          .insert(contentRelations);
-
-        if (contentError) {
-          console.error('Content relation error:', contentError);
-          throw contentError;
-        }
-      }
-
-      // 새로운 코드를 AuthCodeView로 변환하여 목록에 추가
-      const newCode = mapToAuthCodeView(authCodeData as DbAuthCode);
-      setCodes([newCode, ...codes]);
-      setShowGenerateModal(false);
-
-      // 감사 로그 추가
       try {
-        await logAudit('create', {
-          code: newCode.id,
-          institution_name: options.institution_name ?? '',
-          agency: options.agency ?? ''
-        });
+        const { data: authCodeData, error: insertError } = await supabase
+          .from('auth_codes')
+          .insert(insertData)
+          .select('*, users!auth_codes_created_by_fkey(email)')
+          .single();
+
+        if (insertError) {
+          console.error('인증 코드 생성 중 오류 발생:', insertError);
+          toast.error('인증 코드 생성에 실패했습니다.');
+          return;
+        }
+
+        if (!authCodeData) {
+          console.error('생성된 인증 코드를 찾을 수 없습니다.');
+          toast.error('인증 코드 생성에 실패했습니다.');
+          return;
+        }
+
+        // 콘텐츠 ID가 있는 경우 auth_code_contents 테이블에 추가
+        if (options.content_ids && options.content_ids.length > 0) {
+          const contentInsertData = options.content_ids.map(contentId => ({
+            id: crypto.randomUUID(),
+            auth_code_id: newCodeId,
+            content_id: contentId,
+            created_at: now
+          }));
+
+          const { error: contentInsertError } = await supabase
+            .from('auth_code_contents')
+            .insert(contentInsertData);
+
+          if (contentInsertError) {
+            console.error('콘텐츠 연결 중 오류 발생:', contentInsertError);
+            toast.error('콘텐츠 연결에 실패했습니다.');
+            return;
+          }
+        }
+
+        toast.success('인증 코드가 생성되었습니다.');
+        const newAuthCodeView: AuthCodeView = {
+          ...authCodeData,
+          content: [],
+          contents: [],
+          created_at: authCodeData.create_time,
+          updated_at: undefined,
+          is_used: false,
+          status: authCodeData.is_active ? 'active' : 'inactive',
+          user_email: authCodeData.users?.[0]?.email
+        };
+        setCodes(prevCodes => [...prevCodes, newAuthCodeView]);
+
+        // 감사 로그 추가
+        try {
+          await logAudit('create', {
+            code: authCodeData.id,
+            institution_name: authCodeData.institution_name ?? '',
+            agency: authCodeData.agency ?? ''
+          });
+        } catch (error) {
+          console.error('Error logging audit:', error);
+        }
       } catch (error) {
-        console.error('Error logging audit:', error);
+        console.error('인증 코드 생성 중 예외 발생:', error);
+        toast.error('인증 코드 생성에 실패했습니다.');
       }
     } catch (error) {
       console.error('Error generating code:', error);
-      if (error instanceof Error) {
-        alert(`코드 생성 중 오류가 발생했습니다: ${error.message}`);
-      } else {
-        alert('코드 생성 중 알 수 없는 오류가 발생했습니다.');
-      }
+      alert(error instanceof Error ? error.message : '알 수 없는 오류가 발생했습니다.');
+      throw error; // 에러를 상위로 전파하여 UI에서 처리할 수 있도록 함
     }
   };
 
