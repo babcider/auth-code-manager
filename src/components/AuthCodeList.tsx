@@ -113,7 +113,7 @@ export default function AuthCodeList({ initialCodes }: ExtendedAuthCodeListProps
         available_apps: options.available_apps || null,
         available_contents: options.available_contents || null,
         create_time: now,
-        expire_time: null,
+        expire_time: options.expire_time || (options.is_unlimit ? null : new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString()),
         start_time: null,
         last_check_time: null,
         last_check_ip: null,
