@@ -220,8 +220,8 @@ export default function HomePage() {
           break;
         case 'expire_time':
         case 'create_time':
-          compareA = a[sortField] ? new Date(a[sortField]).getTime() : 0;
-          compareB = b[sortField] ? new Date(b[sortField]).getTime() : 0;
+          compareA = a[sortField] ? new Date(a[sortField] as string).getTime() : 0;
+          compareB = b[sortField] ? new Date(b[sortField] as string).getTime() : 0;
           break;
       }
 
