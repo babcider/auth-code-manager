@@ -19,7 +19,11 @@ interface LoginAuditDetails extends BaseAuditDetails {
   role: string;
 }
 
-export type AuditDetails = CodeAuditDetails | LoginAuditDetails;
+interface ExportAuditDetails extends BaseAuditDetails {
+  count: number;
+}
+
+export type AuditDetails = CodeAuditDetails | LoginAuditDetails | ExportAuditDetails;
 
 export async function logAudit(action: AuditAction, details: AuditDetails) {
   const supabase = createClientComponentClient()
