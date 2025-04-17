@@ -95,10 +95,11 @@ export default function AuthCodeList({ initialCodes }: ExtendedAuthCodeListProps
       }
 
       const now = new Date().toISOString();
+      const newCodeId = crypto.randomUUID();
       const { data: authCodeData, error: authCodeError } = await supabase
         .from('auth_codes')
         .insert({
-          id: crypto.randomUUID(),
+          id: newCodeId,
           key: options.key,
           setup_key: options.setup_key || null,
           institution_name: options.institution_name || null,
@@ -120,6 +121,22 @@ export default function AuthCodeList({ initialCodes }: ExtendedAuthCodeListProps
         .single();
 
       if (authCodeError) throw authCodeError;
+
+      // content_ids가 있다면 auth_code_contents 테이블에 관계 추가
+      if (options.content_ids && options.content_ids.length > 0) {
+        const contentRelations = options.content_ids.map(contentId => ({
+          id: crypto.randomUUID(),
+          auth_code_id: newCodeId,
+          content_id: contentId,
+          created_at: now
+        }));
+
+        const { error: contentError } = await supabase
+          .from('auth_code_contents')
+          .insert(contentRelations);
+
+        if (contentError) throw contentError;
+      }
 
       // 새로운 코드를 AuthCodeView로 변환하여 목록에 추가
       const newCode = mapToAuthCodeView(authCodeData as DbAuthCode);
