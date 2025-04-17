@@ -110,21 +110,24 @@ export default function AuthCodeList({ initialCodes }: ExtendedAuthCodeListProps
       // 저장 프로시저 호출
       const { data: result, error: procedureError } = await supabase
         .rpc('create_auth_code_with_contents', {
-          p_key: options.key,
-          p_is_active: options.is_active,
-          p_is_unlimit: options.is_unlimit,
-          p_create_time: currentTime,
-          p_setup_key: options.setup_key,
-          p_unity_key: options.unity_key,
-          p_institution_name: options.institution_name,
-          p_agency: options.agency,
-          p_memo: options.memo,
-          p_program_update: options.program_update,
-          p_local_max_count: options.local_max_count,
-          p_available_apps: options.available_apps,
-          p_available_contents: options.available_contents,
-          p_expire_time: expireTime,
-          p_content_ids: options.content_ids || []
+          auth_code_data: {
+            key: options.key,
+            is_active: options.is_active,
+            is_unlimit: options.is_unlimit,
+            create_time: currentTime,
+            setup_key: options.setup_key,
+            unity_key: options.unity_key,
+            institution_name: options.institution_name,
+            agency: options.agency,
+            memo: options.memo,
+            program_update: options.program_update,
+            local_max_count: options.local_max_count,
+            available_apps: options.available_apps,
+            available_contents: options.available_contents,
+            expire_time: expireTime
+          },
+          content_ids: options.content_ids || [],
+          creation_timestamp: currentTime
         });
 
       if (procedureError) {
