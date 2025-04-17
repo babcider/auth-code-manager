@@ -1,33 +1,67 @@
-export interface CodeGenerationOptions {
-  count: number
-  length: number
-  prefix: string
-  suffix: string
-  expiryDate: Date | null
-  useUppercase: boolean
-  useLowercase: boolean
-  useNumbers: boolean
-  context?: string
-}
+import { Database } from './supabase'
+
+export type Tables = Database['public']['Tables']
+export type Views = Database['public']['Views']
 
 export interface AuthCode {
   id: string
-  code: string
-  used: boolean
-  used_at: string | null
-  created_at: string
-  expires_at: string
-  context: string | null
+  key: string
+  setup_key: string | null
+  unity_key: string | null
+  institution_name: string | null
+  agency: string | null
+  memo: string | null
+  program_update: string | null
+  is_active: boolean
+  is_unlimit: boolean
+  expire_time: string | null
+  local_max_count: number | null
+  available_apps: string | null
+  available_contents: string | null
+  create_time: string
+  start_time: string | null
+  last_check_time: string | null
+  last_check_ip: string | null
+  run_count: number | null
 }
 
-export const DEFAULT_GENERATION_OPTIONS: CodeGenerationOptions = {
-  count: 1,
-  length: 8,
-  prefix: '',
-  suffix: '',
-  expiryDate: new Date(new Date().setDate(new Date().getDate() + 7)),
-  useUppercase: true,
-  useLowercase: true,
-  useNumbers: true,
-  context: '',
-} 
+export interface AuthCodeContent {
+  id: string
+  auth_code_id?: string
+  content_id?: number
+  created_at: string
+  updated_at?: string
+}
+
+export interface AuthCodeListProps {
+  codes: AuthCode[]
+  onEdit: (code: AuthCode) => void
+  onDelete: (id: string) => void
+}
+
+export interface EditCodeModalProps {
+  code: AuthCode | null
+  isOpen: boolean
+  onClose: () => void
+  onUpdate: (code: AuthCode) => void
+}
+
+export interface CodeGenerationOptions {
+  setup_key?: string
+  unity_key?: string
+  institution_name?: string
+  agency?: string
+  memo?: string
+  program_update?: string
+  is_active: boolean
+  is_unlimit: boolean
+  expire_time?: string
+  local_max_count?: number
+  available_apps?: string
+  available_contents?: string
+}
+
+export const defaultGenerationOptions: CodeGenerationOptions = {
+  is_active: true,
+  is_unlimit: false,
+}

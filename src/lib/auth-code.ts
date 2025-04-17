@@ -25,4 +25,41 @@ export function calculateExpiryDate(hours: number): string {
   const date = new Date()
   date.setHours(date.getHours() + hours)
   return date.toISOString()
+}
+
+function generateRandomString(length: number, charset: string): string {
+  let result = '';
+  for (let i = 0; i < length; i++) {
+    result += charset.charAt(Math.floor(Math.random() * charset.length));
+  }
+  return result;
+}
+
+export function generateAuthCodes(options: CodeGenerationOptions): string[] {
+  const {
+    count = 1,
+    length = 8,
+    prefix = '',
+    suffix = '',
+    uppercase = true,
+    lowercase = true,
+    numbers = true
+  } = options;
+
+  let charset = '';
+  if (uppercase) charset += 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+  if (lowercase) charset += 'abcdefghijklmnopqrstuvwxyz';
+  if (numbers) charset += '0123456789';
+
+  if (charset === '') {
+    charset = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+  }
+
+  const codes: string[] = [];
+  for (let i = 0; i < count; i++) {
+    const randomCode = generateRandomString(length, charset);
+    codes.push(`${prefix}${randomCode}${suffix}`);
+  }
+
+  return codes;
 } 

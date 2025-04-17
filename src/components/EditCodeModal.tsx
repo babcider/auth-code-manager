@@ -1,16 +1,17 @@
 'use client'
 
-import { useState } from 'react'
-import { CodeGenerationOptions } from '@/types/auth-code'
+import { useState, useEffect } from 'react'
+import { AuthCodeView, CodeGenerationOptions } from '@/types/auth-code'
 
-interface GenerateCodeModalProps {
+interface EditCodeModalProps {
   isOpen: boolean
   onClose: () => void
-  onGenerate: (options: CodeGenerationOptions) => Promise<void>
+  onUpdate: (id: string, options: Partial<CodeGenerationOptions>) => Promise<void>
+  code: AuthCodeView | null
 }
 
-export default function GenerateCodeModal({ isOpen, onClose, onGenerate }: GenerateCodeModalProps) {
-  const [options, setOptions] = useState<CodeGenerationOptions>({
+export default function EditCodeModal({ isOpen, onClose, onUpdate, code }: EditCodeModalProps) {
+  const [options, setOptions] = useState<Partial<CodeGenerationOptions>>({
     key: '',
     setup_key: '',
     institution_name: '',
@@ -20,32 +21,49 @@ export default function GenerateCodeModal({ isOpen, onClose, onGenerate }: Gener
     is_active: true,
     is_unlimit: false,
     local_max_count: 1,
-    content_ids: []
   })
 
   const [isLoading, setIsLoading] = useState(false)
 
+  useEffect(() => {
+    if (code) {
+      setOptions({
+        key: code.key,
+        setup_key: code.setup_key || '',
+        institution_name: code.institution_name || '',
+        agency: code.agency || '',
+        memo: code.memo || '',
+        program_update: code.program_update || '',
+        is_active: code.is_active,
+        is_unlimit: code.is_unlimit,
+        local_max_count: code.local_max_count,
+      })
+    }
+  }, [code])
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
+    if (!code) return
+
     try {
       setIsLoading(true)
-      await onGenerate(options)
+      await onUpdate(code.id, options)
       onClose()
     } catch (error) {
-      console.error('Error generating code:', error)
+      console.error('Error updating code:', error)
     } finally {
       setIsLoading(false)
     }
   }
 
-  if (!isOpen) return null
+  if (!isOpen || !code) return null
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4">
       <div className="bg-white rounded-lg max-w-lg w-full">
         <div className="p-6">
           <div className="flex justify-between items-center mb-4">
-            <h2 className="text-xl font-bold text-gray-900">새 인증 코드 생성</h2>
+            <h2 className="text-xl font-bold text-gray-900">인증 코드 수정</h2>
             <button
               onClick={onClose}
               className="text-gray-500 hover:text-gray-700"
@@ -170,7 +188,7 @@ export default function GenerateCodeModal({ isOpen, onClose, onGenerate }: Gener
                 disabled={isLoading}
                 className="px-4 py-2 text-sm font-medium text-white bg-blue-600 border border-transparent rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
               >
-                {isLoading ? '생성 중...' : '생성'}
+                {isLoading ? '저장 중...' : '저장'}
               </button>
             </div>
           </form>
