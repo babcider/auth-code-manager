@@ -2,12 +2,24 @@ import { createClientComponentClient } from '@supabase/auth-helpers-nextjs'
 
 export type AuditAction = 'create' | 'update' | 'delete' | 'bulk_delete' | 'export' | 'login' | 'logout'
 
-interface AuditDetails {
+interface BaseAuditDetails {
+  user_email?: string;
+  role?: string;
+}
+
+interface CodeAuditDetails extends BaseAuditDetails {
   code: string;
   institution_name?: string | null;
   agency?: string | null;
   changes?: any;
 }
+
+interface LoginAuditDetails extends BaseAuditDetails {
+  user_email: string;
+  role: string;
+}
+
+export type AuditDetails = CodeAuditDetails | LoginAuditDetails;
 
 export async function logAudit(action: AuditAction, details: AuditDetails) {
   const supabase = createClientComponentClient()
