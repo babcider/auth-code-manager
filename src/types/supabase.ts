@@ -176,6 +176,7 @@ export interface Database {
             available_contents: string | null
           }
           content_ids: string[]
+          app_ids: number[]
         }
         Returns: {
           id: string
