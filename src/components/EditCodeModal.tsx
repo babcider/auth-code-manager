@@ -14,6 +14,7 @@ export default function EditCodeModal({ isOpen, onClose, onUpdate, code }: EditC
   const [options, setOptions] = useState<Partial<CodeGenerationOptions>>({
     key: '',
     setup_key: '',
+    unity_key: '',
     institution_name: '',
     agency: '',
     memo: '',
@@ -21,6 +22,8 @@ export default function EditCodeModal({ isOpen, onClose, onUpdate, code }: EditC
     is_active: true,
     is_unlimit: false,
     local_max_count: null,
+    available_apps: '',
+    available_contents: ''
   })
 
   const [isLoading, setIsLoading] = useState(false)
@@ -28,15 +31,18 @@ export default function EditCodeModal({ isOpen, onClose, onUpdate, code }: EditC
   useEffect(() => {
     if (code) {
       setOptions({
-        key: code.key,
-        setup_key: code.setup_key || '',
-        institution_name: code.institution_name || '',
-        agency: code.agency || '',
-        memo: code.memo || '',
-        program_update: code.program_update || '',
+        key: code.key || '',
+        setup_key: code.setup_key ?? '',
+        unity_key: code.unity_key ?? '',
+        institution_name: code.institution_name ?? '',
+        agency: code.agency ?? '',
+        memo: code.memo ?? '',
+        program_update: code.program_update ?? '',
         is_active: code.is_active,
         is_unlimit: code.is_unlimit,
         local_max_count: code.local_max_count,
+        available_apps: code.available_apps ?? '',
+        available_contents: code.available_contents ?? ''
       })
     }
   }, [code])
@@ -47,7 +53,18 @@ export default function EditCodeModal({ isOpen, onClose, onUpdate, code }: EditC
 
     try {
       setIsLoading(true)
-      await onUpdate(code.id, options)
+      const updatedOptions = {
+        ...options,
+        setup_key: options.setup_key || null,
+        unity_key: options.unity_key || null,
+        institution_name: options.institution_name || null,
+        agency: options.agency || null,
+        memo: options.memo || null,
+        program_update: options.program_update || null,
+        available_apps: options.available_apps || null,
+        available_contents: options.available_contents || null
+      }
+      await onUpdate(code.id, updatedOptions)
       onClose()
     } catch (error) {
       console.error('Error updating code:', error)
@@ -94,8 +111,20 @@ export default function EditCodeModal({ isOpen, onClose, onUpdate, code }: EditC
               </label>
               <input
                 type="text"
-                value={options.setup_key}
-                onChange={(e) => setOptions({ ...options, setup_key: e.target.value })}
+                value={options.setup_key ?? ''}
+                onChange={(e) => setOptions({ ...options, setup_key: e.target.value || null })}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                유니티 키
+              </label>
+              <input
+                type="text"
+                value={options.unity_key ?? ''}
+                onChange={(e) => setOptions({ ...options, unity_key: e.target.value || null })}
                 className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
               />
             </div>
@@ -106,8 +135,8 @@ export default function EditCodeModal({ isOpen, onClose, onUpdate, code }: EditC
               </label>
               <input
                 type="text"
-                value={options.institution_name}
-                onChange={(e) => setOptions({ ...options, institution_name: e.target.value })}
+                value={options.institution_name ?? ''}
+                onChange={(e) => setOptions({ ...options, institution_name: e.target.value || null })}
                 className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
               />
             </div>
@@ -118,8 +147,8 @@ export default function EditCodeModal({ isOpen, onClose, onUpdate, code }: EditC
               </label>
               <input
                 type="text"
-                value={options.agency}
-                onChange={(e) => setOptions({ ...options, agency: e.target.value })}
+                value={options.agency ?? ''}
+                onChange={(e) => setOptions({ ...options, agency: e.target.value || null })}
                 className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
               />
             </div>
@@ -129,8 +158,8 @@ export default function EditCodeModal({ isOpen, onClose, onUpdate, code }: EditC
                 메모
               </label>
               <textarea
-                value={options.memo}
-                onChange={(e) => setOptions({ ...options, memo: e.target.value })}
+                value={options.memo ?? ''}
+                onChange={(e) => setOptions({ ...options, memo: e.target.value || null })}
                 className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                 rows={3}
               />
