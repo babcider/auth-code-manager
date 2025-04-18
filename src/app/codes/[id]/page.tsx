@@ -59,7 +59,10 @@ export default function CodeDetailPage({ params }: { params: { id: string } }) {
         .single();
 
       if (authCodeError) throw authCodeError;
-      setAuthCode(authCodeData);
+      setAuthCode({
+        ...authCodeData,
+        create_time: authCodeData.created_at
+      });
 
       // 선택된 앱 조회
       const { data: appData, error: appError } = await supabase
@@ -77,7 +80,11 @@ export default function CodeDetailPage({ params }: { params: { id: string } }) {
         .eq('auth_code_id', params.id);
 
       if (contentError) throw contentError;
-      setSelectedContents(contentData.map(item => item.content_id).filter((id): id is number => id !== null));
+      setSelectedContents(
+        contentData
+          .map(item => parseInt(item.content_id))
+          .filter((id): id is number => !isNaN(id))
+      );
 
       // 전체 앱 목록 조회
       const { data: allApps, error: allAppsError } = await supabase
