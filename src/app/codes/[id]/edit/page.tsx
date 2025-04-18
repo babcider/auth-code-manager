@@ -99,7 +99,7 @@ export default function EditCodePage({ params }: { params: { id: string } }) {
         is_unlimit: authCodeData.is_unlimit,
         local_max_count: authCodeData.local_max_count?.toString() || '',
         selectedApps: appData.map(item => item.app_id).filter((id): id is number => id !== null),
-        selectedContents: contentData.map(item => item.content_id).filter((id): id is number => id !== null)
+        selectedContents: contentData.map(item => parseInt(item.content_id)).filter((id): id is number => !isNaN(id))
       });
 
       setLoading(false);
@@ -164,7 +164,7 @@ export default function EditCodePage({ params }: { params: { id: string } }) {
       if (formData.selectedContents.length > 0) {
         const contentRelations = formData.selectedContents.map(contentId => ({
           auth_code_id: params.id,
-          content_id: contentId
+          content_id: contentId.toString()
         }));
 
         const { error: contentRelationError } = await supabase
