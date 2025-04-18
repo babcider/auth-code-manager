@@ -11,6 +11,18 @@ export interface Database {
           expire_time: string | null
           created_at: string
           updated_at: string
+          institution_name: string | null
+          agency: string | null
+          memo: string | null
+          setup_key: string | null
+          unity_key: string | null
+          program_update: string | null
+          available_apps: string | null
+          available_contents: string | null
+          start_time: string | null
+          last_check_time: string | null
+          last_check_ip: string | null
+          run_count: number | null
         }
         Insert: {
           key: string
@@ -18,6 +30,14 @@ export interface Database {
           is_unlimit?: boolean
           local_max_count?: number | null
           expire_time?: string | null
+          institution_name?: string | null
+          agency?: string | null
+          memo?: string | null
+          setup_key?: string | null
+          unity_key?: string | null
+          program_update?: string | null
+          available_apps?: string | null
+          available_contents?: string | null
         }
         Update: {
           key?: string
@@ -25,6 +45,18 @@ export interface Database {
           is_unlimit?: boolean
           local_max_count?: number | null
           expire_time?: string | null
+          institution_name?: string | null
+          agency?: string | null
+          memo?: string | null
+          setup_key?: string | null
+          unity_key?: string | null
+          program_update?: string | null
+          available_apps?: string | null
+          available_contents?: string | null
+          start_time?: string | null
+          last_check_time?: string | null
+          last_check_ip?: string | null
+          run_count?: number | null
         }
       }
       auth_code_contents: {
@@ -134,19 +166,20 @@ export interface Database {
             is_unlimit: boolean
             local_max_count: number | null
             expire_time: string | null
+            institution_name: string | null
+            agency: string | null
+            memo: string | null
+            setup_key: string | null
+            unity_key: string | null
+            program_update: string | null
+            available_apps: string | null
+            available_contents: string | null
           }
           content_ids: string[]
         }
         Returns: {
           id: string
-          key: string
-          is_active: boolean
-          is_unlimit: boolean
-          local_max_count: number | null
-          expire_time: string | null
-          created_at: string
-          updated_at: string
-          content_ids: string[]
+          status: string
         }
       }
     }

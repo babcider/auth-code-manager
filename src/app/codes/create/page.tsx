@@ -116,49 +116,29 @@ export default function CreateCodePage() {
       const newCodeId = uuidv4();
       const newKey = uuidv4();
 
-      // 인증 코드 생성
-      const { error: insertError } = await supabase
-        .from('auth_codes')
-        .insert({
-          id: newCodeId,
-          key: newKey,
-          institution_name: formData.institution_name || null,
-          agency: formData.agency || null,
-          memo: formData.memo || null,
-          expire_time: formData.expire_time ? `${formData.expire_time}T00:00:00+00:00` : null,
-          is_active: false,
-          is_unlimit: formData.is_unlimit,
-          local_max_count: formData.local_max_count ? parseInt(formData.local_max_count) : null,
+      // 저장 프로시저 호출
+      const { data: result, error: procedureError } = await supabase
+        .rpc('create_auth_code_with_contents', {
+          auth_code_data: {
+            key: newKey,
+            is_active: true,
+            is_unlimit: formData.is_unlimit,
+            local_max_count: formData.local_max_count ? parseInt(formData.local_max_count) : null,
+            expire_time: formData.expire_time ? new Date(formData.expire_time).toISOString() : null,
+            institution_name: formData.institution_name || null,
+            agency: formData.agency || null,
+            memo: formData.memo || null,
+            setup_key: null,
+            unity_key: null,
+            program_update: null,
+            available_apps: formData.selectedApps.length > 0 ? JSON.stringify(formData.selectedApps) : null,
+            available_contents: formData.selectedContents.length > 0 ? JSON.stringify(formData.selectedContents) : null
+          },
+          content_ids: formData.selectedContents.map(id => id.toString())
         });
 
-      if (insertError) throw insertError;
-
-      // 선택된 앱에 대한 관계 생성
-      if (formData.selectedApps.length > 0) {
-        const appRelations = formData.selectedApps.map(appId => ({
-          auth_code_id: newCodeId,
-          app_id: appId
-        }));
-
-        const { error: appRelationError } = await supabase
-          .from('auth_code_apps')
-          .insert(appRelations);
-
-        if (appRelationError) throw appRelationError;
-      }
-
-      // 선택된 콘텐츠에 대한 관계 생성
-      if (formData.selectedContents.length > 0) {
-        const contentRelations = formData.selectedContents.map(contentId => ({
-          auth_code_id: newCodeId,
-          content_id: contentId
-        }));
-
-        const { error: contentRelationError } = await supabase
-          .from('auth_code_contents')
-          .insert(contentRelations);
-
-        if (contentRelationError) throw contentRelationError;
+      if (procedureError) {
+        throw new Error(`인증 코드 생성 실패: ${procedureError.message}`);
       }
 
       router.push('/');
