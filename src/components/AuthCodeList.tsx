@@ -27,20 +27,27 @@ import { message } from 'antd';
 import { v4 as uuidv4 } from 'uuid';
 
 type DbAuthCode = Database['public']['Views']['auth_code_content_details']['Row'] & {
-  status: string;
+  status: Status;
 };
 
 type Status = 'active' | 'inactive' | 'expired';
 
-const mapToAuthCodeView = (dbCode: DbAuthCode): AuthCodeView => ({
-  ...dbCode,
-  content: [],
-  created_at: dbCode.create_time,
-  updated_at: undefined,
-  contents: [],
-  is_used: false,
-  status: dbCode.status
-});
+const mapToAuthCodeView = (dbCode: any): AuthCodeView => {
+  const status = dbCode.is_active ? 'active' : 'inactive';
+  return {
+    ...dbCode,
+    content: [],
+    contents: [],
+    is_used: false,
+    status,
+    created_at: dbCode.created_at,
+    updated_at: dbCode.updated_at,
+    created_by: dbCode.created_by || '',
+    content_names: dbCode.content_names || [],
+    app_types: dbCode.app_types || [],
+    expires_at: dbCode.expire_time
+  };
+};
 
 interface ExtendedAuthCodeListProps {
   initialCodes: AuthCodeView[];
@@ -114,20 +121,18 @@ export default function AuthCodeList({ initialCodes }: ExtendedAuthCodeListProps
             key: options.key,
             is_active: options.is_active,
             is_unlimit: options.is_unlimit,
-            create_time: currentTime,
-            setup_key: options.setup_key,
-            unity_key: options.unity_key,
-            institution_name: options.institution_name,
-            agency: options.agency,
-            memo: options.memo,
-            program_update: options.program_update,
-            local_max_count: options.local_max_count,
-            available_apps: options.available_apps,
-            available_contents: options.available_contents,
+            setup_key: options.setup_key ?? null,
+            unity_key: options.unity_key ?? null,
+            institution_name: options.institution_name ?? null,
+            agency: options.agency ?? null,
+            memo: options.memo ?? null,
+            program_update: options.program_update ?? null,
+            local_max_count: options.local_max_count ?? null,
+            available_apps: options.available_apps ?? null,
+            available_contents: options.available_contents ?? null,
             expire_time: expireTime
           },
-          content_ids: options.content_ids || [],
-          creation_timestamp: currentTime
+          content_ids: options.content_ids?.map(id => id.toString()) || []
         });
 
       if (procedureError) {
@@ -180,7 +185,14 @@ export default function AuthCodeList({ initialCodes }: ExtendedAuthCodeListProps
 
       // 수정된 코드로 목록 업데이트
       setCodes(codes.map(code => 
-        code.id === id ? mapToAuthCodeView(updatedCode as DbAuthCode) : code
+        code.id === id ? mapToAuthCodeView({
+          ...updatedCode,
+          content_names: [],
+          app_types: [],
+          created_by: session.session.user.id,
+          create_time: updatedCode.created_at,
+          status: updatedCode.is_active ? 'active' : 'inactive'
+        } as DbAuthCode) : code
       ));
 
       // 감사 로그 추가
