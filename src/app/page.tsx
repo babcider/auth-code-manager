@@ -31,26 +31,35 @@ export default function HomePage() {
     checkAuthAndLoadCodes();
   }, []);
 
+  const fetchCodes = async () => {
+    try {
+      const { data: authCodes, error: codesError } = await supabase
+        .from('auth_codes')
+        .select('*')
+        .order('created_at', { ascending: false });
+
+      if (codesError) {
+        throw new Error('인증 코드 목록을 불러오는 중 오류가 발생했습니다.');
+      }
+
+      const formattedCodes = authCodes?.map(code => ({
+        ...code,
+        create_time: new Date(code.created_at).toISOString()
+      })) || [];
+
+      setCodes(formattedCodes);
+    } catch (error) {
+      console.error('Error:', error);
+      setError(error instanceof Error ? error.message : '알 수 없는 오류가 발생했습니다.');
+    }
+  };
+
   const checkAuthAndLoadCodes = async () => {
     try {
-      setError(null);
       const { data: { session }, error: authError } = await supabase.auth.getSession();
       
       if (authError) throw new Error('인증 세션을 확인하는 중 오류가 발생했습니다.');
       if (!session) {
-        router.replace('/auth/login');
-        return;
-      }
-
-      const { data: userData, error: userError } = await supabase
-        .from('users')
-        .select('is_active')
-        .eq('id', session.user.id)
-        .single();
-
-      if (userError) throw new Error('사용자 정보를 확인하는 중 오류가 발생했습니다.');
-      if (!userData?.is_active) {
-        setError('비활성화된 계정입니다. 관리자에게 문의하세요.');
         router.replace('/auth/login');
         return;
       }
@@ -62,20 +71,6 @@ export default function HomePage() {
     } finally {
       setLoading(false);
     }
-  };
-
-  const fetchCodes = async () => {
-    const { data: authCodes, error: codesError } = await supabase
-      .from('auth_codes')
-      .select('*')
-      .order('create_time', { ascending: false });
-
-    if (codesError) {
-      console.error('Codes error:', codesError);
-      throw new Error('인증 코드 목록을 불러오는 중 오류가 발생했습니다.');
-    }
-
-    setCodes(authCodes || []);
   };
 
   const handleExpireDateClick = (code: AuthCode) => {
