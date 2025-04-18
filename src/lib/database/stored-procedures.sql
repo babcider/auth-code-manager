@@ -1,3 +1,5 @@
+DROP FUNCTION IF EXISTS create_auth_code_with_contents;
+
 CREATE OR REPLACE FUNCTION create_auth_code_with_contents(
   auth_code_data JSONB,
   content_ids TEXT[] DEFAULT '{}',
