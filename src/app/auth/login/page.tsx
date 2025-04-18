@@ -86,11 +86,14 @@ export default function Login() {
 
   return (
     <div className="flex min-h-screen flex-col items-center justify-center bg-gray-50">
-      <div className="w-full max-w-md space-y-8 rounded-lg bg-white p-6 shadow-md">
+      <div className="w-full max-w-md space-y-8 rounded-lg bg-white p-8 shadow-lg">
         <div className="text-center">
           <h2 className="text-3xl font-bold tracking-tight text-gray-900">
             로그인
           </h2>
+          <p className="mt-2 text-sm text-gray-600">
+            시리얼 매니저에 오신 것을 환영합니다
+          </p>
         </div>
         
         <MessageHandler searchParams={searchParams} />
@@ -103,14 +106,57 @@ export default function Login() {
           ) : (
             <Auth
               supabaseClient={supabase}
-              appearance={{ theme: ThemeSupa }}
-              providers={[]}
+              appearance={{ 
+                theme: ThemeSupa,
+                style: {
+                  button: {
+                    background: '#4F46E5',
+                    color: 'white',
+                    borderRadius: '0.5rem',
+                    height: '2.5rem',
+                    fontSize: '0.875rem',
+                  },
+                  anchor: {
+                    color: '#4F46E5',
+                    fontSize: '0.875rem',
+                  },
+                  container: {
+                    gap: '1rem',
+                  },
+                  divider: {
+                    margin: '1.5rem 0',
+                  },
+                },
+                className: {
+                  container: 'space-y-4',
+                  button: 'w-full !bg-indigo-600 hover:!bg-indigo-700 transition-colors',
+                  input: 'rounded-lg border-gray-300 focus:border-indigo-500 focus:ring-indigo-500',
+                },
+              }}
+              providers={['google']}
               localization={{
                 variables: {
                   sign_in: {
                     email_label: '이메일',
                     password_label: '비밀번호',
-                    button_label: '로그인',
+                    button_label: '이메일로 로그인',
+                    loading_button_label: '로그인 중...',
+                    social_provider_text: '구글 계정으로 로그인',
+                    link_text: '계정이 없으신가요? 회원가입',
+                  },
+                  sign_up: {
+                    email_label: '이메일',
+                    password_label: '비밀번호',
+                    button_label: '회원가입',
+                    loading_button_label: '회원가입 중...',
+                    social_provider_text: '구글 계정으로 회원가입',
+                    link_text: '이미 계정이 있으신가요? 로그인',
+                  },
+                  forgotten_password: {
+                    link_text: '비밀번호를 잊으셨나요?',
+                    button_label: '비밀번호 재설정 메일 보내기',
+                    loading_button_label: '메일 전송 중...',
+                    confirmation_text: '비밀번호 재설정 링크를 이메일로 보내드렸습니다.',
                   },
                 },
               }}
