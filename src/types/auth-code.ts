@@ -70,18 +70,18 @@ export interface EditCodeModalProps {
 
 export interface CodeGenerationOptions {
   key: string;
-  setup_key?: string;
-  unity_key?: string;
-  institution_name?: string;
-  agency?: string;
-  memo?: string;
-  program_update?: string;
+  setup_key?: string | null;
+  unity_key?: string | null;
+  institution_name?: string | null;
+  agency?: string | null;
+  memo?: string | null;
+  program_update?: string | null;
   is_active: boolean;
   is_unlimit: boolean;
-  expire_time?: string;
+  expire_time?: string | null;
   local_max_count?: number | null;
-  available_apps?: string;
-  available_contents?: string;
+  available_apps?: string | null;
+  available_contents?: string | null;
   content_ids?: number[];
 }
 
