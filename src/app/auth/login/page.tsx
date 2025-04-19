@@ -65,10 +65,10 @@ export default function Login() {
 
           if (userData?.is_active) {
             if (user.email) {
-            await logAudit('login', {
-              user_email: user.email,
-              role: userData.role
-            })
+              await logAudit('login', {
+                user_email: user.email,
+                role: userData.role
+              })
             }
             router.push('/')
           } else {
@@ -82,6 +82,40 @@ export default function Login() {
     }
 
     checkUser()
+  }, [router])
+
+  useEffect(() => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
+      if (event === 'SIGNED_IN' && session?.user) {
+        try {
+          const { data: userData } = await supabase
+            .from('users')
+            .select('is_active, role')
+            .eq('id', session.user.id)
+            .single()
+
+          if (userData?.is_active) {
+            if (session.user.email) {
+              await logAudit('login', {
+                user_email: session.user.email,
+                role: userData.role
+              })
+            }
+            router.push('/')
+          } else {
+            toast.error('계정이 비활성화되었습니다. 관리자에게 문의하세요.')
+            await supabase.auth.signOut()
+          }
+        } catch (error) {
+          console.error('사용자 확인 중 오류 발생:', error)
+          toast.error('로그인 중 오류가 발생했습니다.')
+        }
+      }
+    })
+
+    return () => {
+      subscription.unsubscribe()
+    }
   }, [router])
 
   return (
