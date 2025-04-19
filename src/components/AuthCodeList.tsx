@@ -132,7 +132,8 @@ export default function AuthCodeList({ initialCodes }: ExtendedAuthCodeListProps
             available_contents: options.available_contents ?? null,
             expire_time: expireTime
           },
-          content_ids: options.content_ids?.map(id => id.toString()) || []
+          content_ids: options.content_ids?.map(id => id.toString()) || [],
+          app_ids: options.available_apps?.split(',').map(id => parseInt(id)) || []
         });
 
       if (procedureError) {
