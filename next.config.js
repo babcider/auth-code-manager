@@ -7,11 +7,13 @@ const nextConfig = {
   eslint: {
     ignoreDuringBuilds: true
   },
-  webpack: (config, { isServer }) => {
-    // Supabase Edge Functions 디렉토리 제외
+  webpack: (config) => {
     config.watchOptions = {
       ...config.watchOptions,
-      ignored: [...(config.watchOptions?.ignored ?? []), '**/supabase/functions/**']
+      ignored: [
+        ...(config.watchOptions?.ignored || []),
+        '**/supabase/functions/**'
+      ]
     };
     return config;
   }
