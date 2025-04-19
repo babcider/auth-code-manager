@@ -4,7 +4,21 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { createClientComponentClient } from '@supabase/auth-helpers-nextjs';
 import { Database } from '@/types/supabase';
-import { v4 as uuidv4 } from 'uuid';
+
+// 16자리 코드 생성 함수 (영문 대문자와 숫자만 사용, I,O,1,0 제외)
+function generateAuthCode(): string {
+  // I,O,1,0을 제외한 영문 대문자와 숫자
+  const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+  let code = '';
+  
+  // 16자리 문자열 생성
+  for (let i = 0; i < 16; i++) {
+    code += chars.charAt(Math.floor(Math.random() * chars.length));
+  }
+  
+  // 4자리마다 하이픈 추가
+  return code.replace(/(.{4})/g, '$1-').slice(0, -1);
+}
 
 interface InsolContent {
   id: number;
@@ -113,7 +127,7 @@ export default function CreateCodePage() {
         return;
       }
 
-      const newKey = uuidv4();
+      const newKey = generateAuthCode();
 
       console.log('Submitting with data:', {
         selectedApps: formData.selectedApps,
