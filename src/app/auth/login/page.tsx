@@ -71,6 +71,9 @@ export default function Login() {
               })
             }
             router.push('/')
+            setTimeout(() => {
+              window.location.reload()
+            }, 1000)
           } else {
             toast.error('계정이 비활성화되었습니다. 관리자에게 문의하세요.')
             await supabase.auth.signOut()
@@ -102,6 +105,9 @@ export default function Login() {
               })
             }
             router.push('/')
+            setTimeout(() => {
+              window.location.reload()
+            }, 1000)
           } else {
             toast.error('계정이 비활성화되었습니다. 관리자에게 문의하세요.')
             await supabase.auth.signOut()
