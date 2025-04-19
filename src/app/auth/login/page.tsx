@@ -8,6 +8,7 @@ import { Suspense, useEffect, useState } from 'react'
 import { toast, Toaster } from 'react-hot-toast'
 import { logAudit } from '@/lib/audit'
 import { AuthChangeEvent } from '@supabase/supabase-js'
+import { ViewType } from '@supabase/auth-ui-shared'
 
 const errorMessages: { [key: string]: string } = {
   no_code: '인증 코드가 없습니다. 다시 시도해주세요.',
@@ -70,41 +71,6 @@ export default function Login() {
       setLoading(false)
     }
   }
-
-  useEffect(() => {
-    const checkUser = async () => {
-      try {
-        const { data: { user } } = await supabase.auth.getUser()
-        if (user) {
-          const { data: userData } = await supabase
-            .from('users')
-            .select('is_active, role')
-            .eq('id', user.id)
-            .single()
-
-          if (userData?.is_active) {
-            if (user.email) {
-              await logAudit('login', {
-                user_email: user.email,
-                role: userData.role
-              })
-            }
-            router.push('/')
-            setTimeout(() => {
-              window.location.reload()
-            }, 1000)
-          } else {
-            toast.error('계정이 비활성화되었습니다. 관리자에게 문의하세요.')
-            await supabase.auth.signOut()
-          }
-        }
-      } catch (error) {
-        console.error('사용자 확인 중 오류 발생:', error)
-      }
-    }
-
-    checkUser()
-  }, [router])
 
   useEffect(() => {
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
@@ -193,66 +159,35 @@ export default function Login() {
                   <div className="w-full border-t border-gray-300"></div>
                 </div>
                 <div className="relative flex justify-center text-sm">
-                  <span className="px-2 bg-white text-gray-500">또는</span>
+                  <span className="bg-white px-2 text-gray-500">또는</span>
                 </div>
               </div>
               <Auth
                 supabaseClient={supabase}
-                appearance={{ 
-                  theme: ThemeSupa,
-                  style: {
-                    button: {
-                      background: '#4F46E5',
-                      color: 'white',
-                      borderRadius: '0.5rem',
-                      height: '2.5rem',
-                      fontSize: '0.875rem',
-                    },
-                    anchor: {
-                      color: '#4F46E5',
-                      fontSize: '0.875rem',
-                    },
-                    container: {
-                      gap: '1rem',
-                    },
-                    divider: {
-                      margin: '1.5rem 0',
-                    },
-                  },
-                  className: {
-                    container: 'space-y-4',
-                    button: 'w-full !bg-indigo-600 hover:!bg-indigo-700 transition-colors',
-                    input: 'rounded-lg border-gray-300 focus:border-indigo-500 focus:ring-indigo-500',
-                  },
-                }}
-                providers={[]}
-                view="sign_in"
+                appearance={{ theme: ThemeSupa }}
                 localization={{
                   variables: {
                     sign_in: {
                       email_label: '이메일',
                       password_label: '비밀번호',
-                      button_label: '이메일로 로그인',
+                      button_label: '로그인',
                       loading_button_label: '로그인 중...',
-                      social_provider_text: '구글 계정으로 로그인',
-                      link_text: '계정이 없으신가요? 회원가입',
+                      social_provider_text: '{{provider}}로 로그인',
+                      link_text: '이미 계정이 있으신가요? 로그인하기'
                     },
                     sign_up: {
                       email_label: '이메일',
                       password_label: '비밀번호',
                       button_label: '회원가입',
                       loading_button_label: '회원가입 중...',
-                      social_provider_text: '구글 계정으로 회원가입',
-                      link_text: '이미 계정이 있으신가요? 로그인',
-                    },
-                    forgotten_password: {
-                      link_text: '비밀번호를 잊으셨나요?',
-                      button_label: '비밀번호 재설정 메일 보내기',
-                      loading_button_label: '메일 전송 중...',
-                      confirmation_text: '비밀번호 재설정 링크를 이메일로 보내드렸습니다.',
-                    },
-                  },
+                      social_provider_text: '{{provider}}로 회원가입',
+                      link_text: '계정이 없으신가요? 회원가입하기',
+                      confirmation_text: '확인 이메일을 확인해주세요'
+                    }
+                  }
                 }}
+                providers={['google']}
+                redirectTo={`${window.location.origin}/auth/callback`}
               />
             </>
           )}
