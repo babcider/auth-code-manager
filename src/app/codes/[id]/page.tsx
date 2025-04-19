@@ -55,7 +55,7 @@ export default function CodeDetailPage({ params }: { params: { id: string } }) {
       const { data: authCodeData, error: authCodeError } = await supabase
         .from('auth_codes')
         .select('*')
-        .eq('id', params.id)
+        .eq('key', params.id)
         .single();
 
       if (authCodeError) throw authCodeError;
@@ -68,7 +68,7 @@ export default function CodeDetailPage({ params }: { params: { id: string } }) {
       const { data: appData, error: appError } = await supabase
         .from('auth_code_apps')
         .select('app_id')
-        .eq('auth_code_id', params.id);
+        .eq('auth_code_id', authCodeData.id);
 
       if (appError) throw appError;
       setSelectedApps(appData.map(item => item.app_id).filter((id): id is number => id !== null));
@@ -77,7 +77,7 @@ export default function CodeDetailPage({ params }: { params: { id: string } }) {
       const { data: contentData, error: contentError } = await supabase
         .from('auth_code_contents')
         .select('content_id')
-        .eq('auth_code_id', params.id);
+        .eq('auth_code_id', authCodeData.id);
 
       if (contentError) throw contentError;
       setSelectedContents(

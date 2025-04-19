@@ -44,7 +44,7 @@ export default function EditCodePage({ params }: { params: { id: string } }) {
       const { data: authCodeData, error: authCodeError } = await supabase
         .from('auth_codes')
         .select('*')
-        .eq('id', params.id)
+        .eq('key', params.id)
         .single();
 
       if (authCodeError) throw authCodeError;
@@ -53,7 +53,7 @@ export default function EditCodePage({ params }: { params: { id: string } }) {
       const { data: appData, error: appError } = await supabase
         .from('auth_code_apps')
         .select('app_id')
-        .eq('auth_code_id', params.id);
+        .eq('auth_code_id', authCodeData.id);
 
       if (appError) throw appError;
 
@@ -61,7 +61,7 @@ export default function EditCodePage({ params }: { params: { id: string } }) {
       const { data: contentData, error: contentError } = await supabase
         .from('auth_code_contents')
         .select('content_id')
-        .eq('auth_code_id', params.id);
+        .eq('auth_code_id', authCodeData.id);
 
       if (contentError) throw contentError;
 
@@ -115,6 +115,17 @@ export default function EditCodePage({ params }: { params: { id: string } }) {
     setSaving(true);
 
     try {
+      // 먼저 현재 auth_code의 id를 가져옵니다
+      const { data: authCodeData, error: authCodeError } = await supabase
+        .from('auth_codes')
+        .select('id')
+        .eq('key', params.id)
+        .single();
+
+      if (authCodeError) throw authCodeError;
+
+      const authCodeId = authCodeData.id;
+
       // 인증 코드 정보 업데이트
       const { error: updateError } = await supabase
         .from('auth_codes')
@@ -126,7 +137,7 @@ export default function EditCodePage({ params }: { params: { id: string } }) {
           is_unlimit: formData.is_unlimit,
           local_max_count: formData.local_max_count ? parseInt(formData.local_max_count) : null,
         })
-        .eq('id', params.id);
+        .eq('key', params.id);
 
       if (updateError) throw updateError;
 
@@ -134,14 +145,14 @@ export default function EditCodePage({ params }: { params: { id: string } }) {
       const { error: deleteAppError } = await supabase
         .from('auth_code_apps')
         .delete()
-        .eq('auth_code_id', params.id);
+        .eq('auth_code_id', authCodeId);
 
       if (deleteAppError) throw deleteAppError;
 
       // 새로운 앱 관계 생성
       if (formData.selectedApps.length > 0) {
         const appRelations = formData.selectedApps.map(appId => ({
-          auth_code_id: params.id,
+          auth_code_id: authCodeId,
           app_id: appId
         }));
 
@@ -156,14 +167,14 @@ export default function EditCodePage({ params }: { params: { id: string } }) {
       const { error: deleteContentError } = await supabase
         .from('auth_code_contents')
         .delete()
-        .eq('auth_code_id', params.id);
+        .eq('auth_code_id', authCodeId);
 
       if (deleteContentError) throw deleteContentError;
 
       // 새로운 콘텐츠 관계 생성
       if (formData.selectedContents.length > 0) {
         const contentRelations = formData.selectedContents.map(contentId => ({
-          auth_code_id: params.id,
+          auth_code_id: authCodeId,
           content_id: contentId.toString()
         }));
 
