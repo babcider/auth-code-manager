@@ -19,10 +19,10 @@ export async function POST(request: Request) {
         .eq('id', session.user.id)
         .single()
 
-      await logAudit('logout', {
+    await logAudit('logout', {
         user_email: session.user.email,
         role: userData?.role
-      })
+    })
     }
     await supabase.auth.signOut()
   }

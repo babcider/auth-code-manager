@@ -185,6 +185,19 @@ export default function CreateCodePage() {
             ? [...prev.selectedContents, contentId]
             : prev.selectedContents.filter(id => id !== contentId)
         }));
+      } else if (name.startsWith('select_all_contents_')) {
+        // 앱의 모든 콘텐츠 전체 선택/해제
+        const appId = parseInt(name.replace('select_all_contents_', ''));
+        const appContents = contents.filter(content => content.app_type === appId);
+        const contentIds = appContents.map(content => content.id);
+        const isChecked = (e.target as HTMLInputElement).checked;
+
+        setFormData(prev => ({
+          ...prev,
+          selectedContents: isChecked
+            ? Array.from(new Set([...prev.selectedContents, ...contentIds]))
+            : prev.selectedContents.filter(id => !contentIds.includes(id))
+        }));
       }
     } else {
       setFormData(prev => ({
@@ -192,6 +205,12 @@ export default function CreateCodePage() {
         [name]: value
       }));
     }
+  };
+
+  // 앱의 모든 콘텐츠가 선택되었는지 확인하는 함수
+  const areAllContentsSelected = (appId: number) => {
+    const appContents = contents.filter(content => content.app_type === appId);
+    return appContents.every(content => formData.selectedContents.includes(content.id));
   };
 
   return (
@@ -333,6 +352,19 @@ export default function CreateCodePage() {
                       
                       {isAppSelected && appContents.length > 0 && (
                         <div className="p-2 space-y-1 bg-white">
+                          <div className="flex items-center gap-2 pl-8 py-1 border-b border-gray-200">
+                            <input
+                              type="checkbox"
+                              id={`select_all_contents_${app.app_id}`}
+                              name={`select_all_contents_${app.app_id}`}
+                              checked={areAllContentsSelected(app.app_id)}
+                              onChange={handleChange}
+                              className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                            />
+                            <label htmlFor={`select_all_contents_${app.app_id}`} className="text-sm font-medium text-gray-700">
+                              전체 선택
+                            </label>
+                          </div>
                           {appContents.map(content => (
                             <div key={content.id} className="flex items-center gap-2 pl-8 py-1">
                               <input

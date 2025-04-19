@@ -65,10 +65,10 @@ export default function Login() {
 
           if (userData?.is_active) {
             if (user.email) {
-              await logAudit('login', {
-                user_email: user.email,
-                role: userData.role
-              })
+            await logAudit('login', {
+              user_email: user.email,
+              role: userData.role
+            })
             }
             router.push('/')
           } else {
