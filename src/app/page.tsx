@@ -90,7 +90,7 @@ export default function HomePage() {
     } else {
       setEditDate('');
     }
-    setEditingId(code.id);
+    setEditingId(code.key);
   };
 
   const handleExpireDateUpdate = async (codeId: string) => {
@@ -106,7 +106,7 @@ export default function HomePage() {
         .update({
           expire_time: formattedDate
         })
-        .eq('id', codeId);
+        .eq('key', codeId);
 
       if (updateError) {
         console.error('Update error details:', updateError);
@@ -581,7 +581,7 @@ export default function HomePage() {
                   </span>
                 </td>
                 <td className="px-4 py-2 border">
-                  {editingId === code.id ? (
+                  {editingId === code.key ? (
                     <div className="flex items-center space-x-2">
                       <input
                         type="date"
@@ -590,7 +590,7 @@ export default function HomePage() {
                         className="border rounded px-2 py-1 text-sm"
                       />
                       <button
-                        onClick={() => handleExpireDateUpdate(code.id)}
+                        onClick={() => handleExpireDateUpdate(code.key)}
                         className="text-blue-600 hover:text-blue-800"
                         disabled={updateLoading}
                       >
