@@ -53,6 +53,7 @@ export default function Login() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const [loading, setLoading] = useState(false)
+  const [view, setView] = useState<ViewType>('sign_in')
 
   const handleGoogleLogin = async () => {
     try {
@@ -114,7 +115,7 @@ export default function Login() {
       <div className="w-full max-w-md space-y-8 rounded-lg bg-white p-8 shadow-lg">
         <div className="text-center">
           <h2 className="text-3xl font-bold tracking-tight text-gray-900">
-            로그인
+            {view === 'sign_in' ? '로그인' : '회원가입'}
           </h2>
           <p className="mt-2 text-sm text-gray-600">
             시리얼 매니저에 오신 것을 환영합니다
@@ -152,7 +153,7 @@ export default function Login() {
                     fill="#EA4335"
                   />
                 </svg>
-                구글 계정으로 로그인
+                구글 계정으로 {view === 'sign_in' ? '로그인' : '회원가입'}
               </button>
               <div className="relative my-6">
                 <div className="absolute inset-0 flex items-center">
@@ -165,6 +166,7 @@ export default function Login() {
               <Auth
                 supabaseClient={supabase}
                 appearance={{ theme: ThemeSupa }}
+                view={view}
                 localization={{
                   variables: {
                     sign_in: {
@@ -172,7 +174,6 @@ export default function Login() {
                       password_label: '비밀번호',
                       button_label: '로그인',
                       loading_button_label: '로그인 중...',
-                      social_provider_text: '{{provider}}로 로그인',
                       link_text: '이미 계정이 있으신가요? 로그인하기'
                     },
                     sign_up: {
@@ -180,13 +181,12 @@ export default function Login() {
                       password_label: '비밀번호',
                       button_label: '회원가입',
                       loading_button_label: '회원가입 중...',
-                      social_provider_text: '{{provider}}로 회원가입',
                       link_text: '계정이 없으신가요? 회원가입하기',
                       confirmation_text: '확인 이메일을 확인해주세요'
                     }
                   }
                 }}
-                providers={['google']}
+                providers={[]}
                 redirectTo={`${window.location.origin}/auth/callback`}
               />
             </>
