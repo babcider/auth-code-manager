@@ -113,8 +113,12 @@ export default function CreateCodePage() {
         return;
       }
 
-      const newCodeId = uuidv4();
       const newKey = uuidv4();
+
+      console.log('Submitting with data:', {
+        selectedApps: formData.selectedApps,
+        selectedContents: formData.selectedContents
+      });
 
       // 저장 프로시저 호출
       const { data: result, error: procedureError } = await supabase
@@ -131,11 +135,14 @@ export default function CreateCodePage() {
             setup_key: null,
             unity_key: null,
             program_update: null,
-            available_apps: formData.selectedApps.length > 0 ? JSON.stringify(formData.selectedApps) : null,
-            available_contents: formData.selectedContents.length > 0 ? JSON.stringify(formData.selectedContents) : null
+            available_apps: null,
+            available_contents: null
           },
-          content_ids: formData.selectedContents.map(id => id.toString())
+          content_ids: formData.selectedContents.map(id => id.toString()),
+          app_ids: formData.selectedApps
         });
+
+      console.log('RPC result:', result);
 
       if (procedureError) {
         throw new Error(`인증 코드 생성 실패: ${procedureError.message}`);

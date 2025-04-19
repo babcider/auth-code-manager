@@ -1,0 +1,119 @@
+---
+description: 
+globs: 
+alwaysApply: true
+---
+
+# Database Schema Information
+
+## Tables and Relationships
+
+## schema_info
+| schema_info                                                                                        |
+| -------------------------------------------------------------------------------------------------- |
+| auth_code_apps.id: uuid (NOT NULL) (DEFAULT: uuid_generate_v4())                                   |
+| auth_code_apps.auth_code_id: uuid (NOT NULL)                                                       |
+| auth_code_apps.app_id: integer (NOT NULL)                                                          |
+| auth_code_apps.created_at: timestamp with time zone (DEFAULT: timezone('utc'::text, now()))        |
+| auth_code_content_details.id: uuid                                                                 |
+| auth_code_content_details.key: character varying                                                   |
+| auth_code_content_details.setup_key: character varying                                             |
+| auth_code_content_details.unity_key: character varying                                             |
+| auth_code_content_details.institution_name: character varying                                      |
+| auth_code_content_details.agency: character varying                                                |
+| auth_code_content_details.memo: character varying                                                  |
+| auth_code_content_details.program_update: character varying                                        |
+| auth_code_content_details.is_active: boolean                                                       |
+| auth_code_content_details.is_unlimit: boolean                                                      |
+| auth_code_content_details.expire_time: timestamp with time zone                                    |
+| auth_code_content_details.local_max_count: integer                                                 |
+| auth_code_content_details.create_time: timestamp with time zone                                    |
+| auth_code_content_details.start_time: timestamp with time zone                                     |
+| auth_code_content_details.last_check_time: timestamp with time zone                                |
+| auth_code_content_details.last_check_ip: character varying                                         |
+| auth_code_content_details.run_count: integer                                                       |
+| auth_code_content_details.content_names: ARRAY                                                     |
+| auth_code_content_details.app_types: ARRAY                                                         |
+| auth_code_content_details.content_count: bigint                                                    |
+| auth_code_content_details.status: text                                                             |
+| auth_code_contents.id: uuid (NOT NULL) (DEFAULT: uuid_generate_v4())                               |
+| auth_code_contents.auth_code_id: character varying                                                 |
+| auth_code_contents.content_id: integer                                                             |
+| auth_code_contents.created_at: timestamp with time zone (DEFAULT: now())                           |
+| auth_codes.id: uuid (NOT NULL) (DEFAULT: gen_random_uuid())                                        |
+| auth_codes.key: character varying (NOT NULL)                                                       |
+| auth_codes.setup_key: character varying                                                            |
+| auth_codes.unity_key: character varying                                                            |
+| auth_codes.institution_name: character varying                                                     |
+| auth_codes.agency: character varying                                                               |
+| auth_codes.memo: character varying                                                                 |
+| auth_codes.program_update: character varying                                                       |
+| auth_codes.is_active: boolean (NOT NULL) (DEFAULT: true)                                           |
+| auth_codes.is_unlimit: boolean (NOT NULL) (DEFAULT: false)                                         |
+| auth_codes.expire_time: timestamp with time zone                                                   |
+| auth_codes.local_max_count: integer (DEFAULT: 0)                                                   |
+| auth_codes.create_time: timestamp with time zone (NOT NULL) (DEFAULT: CURRENT_TIMESTAMP)           |
+| auth_codes.start_time: timestamp with time zone                                                    |
+| auth_codes.last_check_time: timestamp with time zone                                               |
+| auth_codes.last_check_ip: character varying                                                        |
+| auth_codes.run_count: integer (DEFAULT: 0)                                                         |
+| auth_codes_audit_log.id: uuid (NOT NULL) (DEFAULT: gen_random_uuid())                              |
+| auth_codes_audit_log.auth_code_id: uuid (NOT NULL)                                                 |
+| auth_codes_audit_log.action: text (NOT NULL)                                                       |
+| auth_codes_audit_log.action_timestamp: timestamp with time zone (NOT NULL) (DEFAULT: now())        |
+| auth_codes_audit_log.user_id: uuid                                                                 |
+| auth_codes_audit_log.ip_address: text                                                              |
+| auth_codes_audit_log.user_agent: text                                                              |
+| auth_codes_audit_log.details: jsonb                                                                |
+| auth_codes_audit_log.created_at: timestamp with time zone (NOT NULL) (DEFAULT: now())              |
+| auth_codes_failed_attempts.id: uuid (NOT NULL) (DEFAULT: gen_random_uuid())                        |
+| auth_codes_failed_attempts.code: text (NOT NULL)                                                   |
+| auth_codes_failed_attempts.attempt_timestamp: timestamp with time zone (NOT NULL) (DEFAULT: now()) |
+| auth_codes_failed_attempts.ip_address: text                                                        |
+| auth_codes_failed_attempts.user_agent: text                                                        |
+| auth_codes_failed_attempts.failure_reason: text                                                    |
+| auth_codes_failed_attempts.details: jsonb                                                          |
+| insol_apps.app_id: integer (NOT NULL)                                                              |
+| insol_apps.program_name: character varying (NOT NULL)                                              |
+| insol_apps.created_at: timestamp with time zone (DEFAULT: timezone('utc'::text, now()))            |
+| insol_apps.updated_at: timestamp with time zone (DEFAULT: timezone('utc'::text, now()))            |
+| insol_contents.id: integer (NOT NULL)                                                              |
+| insol_contents.name: character varying (NOT NULL)                                                  |
+| insol_contents.scene_name: character varying                                                       |
+| insol_contents.custom: character varying                                                           |
+| insol_contents.app_type: integer                                                                   |
+| users.id: uuid (NOT NULL)                                                                          |
+| users.email: text (NOT NULL)                                                                       |
+| users.role: text (NOT NULL) (DEFAULT: 'user'::text)                                                |
+| users.is_active: boolean (NOT NULL) (DEFAULT: false)                                               |
+| users.created_at: timestamp with time zone (NOT NULL) (DEFAULT: timezone('utc'::text, now()))      |
+| users.updated_at: timestamp with time zone (NOT NULL) (DEFAULT: timezone('utc'::text, now()))      |
+| users.provider: text                                                                               |
+
+
+
+## Relationships
+
+| table_schema | constraint_name                           | table_name                 | column_name     | foreign_table_name   | foreign_column_name |
+| ------------ | ----------------------------------------- | -------------------------- | --------------- | -------------------- | ------------------- |
+| storage      | objects_bucketId_fkey                     | objects                    | bucket_id       | buckets              | id                  |
+| auth         | identities_user_id_fkey                   | identities                 | user_id         | users                | id                  |
+| auth         | sessions_user_id_fkey                     | sessions                   | user_id         | users                | id                  |
+| auth         | refresh_tokens_session_id_fkey            | refresh_tokens             | session_id      | sessions             | id                  |
+| auth         | mfa_factors_user_id_fkey                  | mfa_factors                | user_id         | users                | id                  |
+| auth         | mfa_challenges_auth_factor_id_fkey        | mfa_challenges             | factor_id       | mfa_factors          | id                  |
+| auth         | mfa_amr_claims_session_id_fkey            | mfa_amr_claims             | session_id      | sessions             | id                  |
+| auth         | sso_domains_sso_provider_id_fkey          | sso_domains                | sso_provider_id | sso_providers        | id                  |
+| auth         | saml_providers_sso_provider_id_fkey       | saml_providers             | sso_provider_id | sso_providers        | id                  |
+| auth         | saml_relay_states_sso_provider_id_fkey    | saml_relay_states          | sso_provider_id | sso_providers        | id                  |
+| auth         | saml_relay_states_flow_state_id_fkey      | saml_relay_states          | flow_state_id   | flow_state           | id                  |
+| auth         | one_time_tokens_user_id_fkey              | one_time_tokens            | user_id         | users                | id                  |
+| storage      | s3_multipart_uploads_bucket_id_fkey       | s3_multipart_uploads       | bucket_id       | buckets              | id                  |
+| storage      | s3_multipart_uploads_parts_upload_id_fkey | s3_multipart_uploads_parts | upload_id       | s3_multipart_uploads | id                  |
+| storage      | s3_multipart_uploads_parts_bucket_id_fkey | s3_multipart_uploads_parts | bucket_id       | buckets              | id                  |
+| storage      | prefixes_bucketId_fkey                    | prefixes                   | bucket_id       | buckets              | id                  |
+| public       | auth_code_contents_auth_code_id_fkey      | auth_code_contents         | auth_code_id    | auth_codes           | key                 |
+| public       | auth_code_contents_content_id_fkey        | auth_code_contents         | content_id      | insol_contents       | id                  |
+| public       | fk_app_type                               | insol_contents             | app_type        | insol_apps           | app_id              |
+| public       | auth_code_apps_auth_code_id_fkey          | auth_code_apps             | auth_code_id    | auth_codes           | id                  |
+| public       | auth_code_apps_app_id_fkey                | auth_code_apps             | app_id          | insol_apps           | app_id              |

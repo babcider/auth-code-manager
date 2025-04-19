@@ -18,6 +18,10 @@
 - Tailwind CSS
 - Shadcn UI
 
+## 프로젝트 문서
+
+- [데이터베이스 스키마](docs/DATABASE.md)
+
 ## 시작하기
 
 1. 저장소 클론
