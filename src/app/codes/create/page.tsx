@@ -28,8 +28,8 @@ export default function CreateCodePage() {
     institution_name: '',
     agency: '',
     memo: '',
-    expire_time: '',
-    is_unlimit: false,
+    expire_time: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toISOString().split('T')[0], // 오늘 + 365일
+    is_unlimit: true, // 무제한 사용 체크
     local_max_count: '',
     selectedApps: [] as number[],
     selectedContents: [] as number[]
@@ -125,7 +125,7 @@ export default function CreateCodePage() {
         .rpc('create_auth_code_with_contents', {
           auth_code_data: {
             key: newKey,
-            is_active: true,
+            is_active: false, // 생성됨 상태로 변경
             is_unlimit: formData.is_unlimit,
             local_max_count: formData.local_max_count ? parseInt(formData.local_max_count) : null,
             expire_time: formData.expire_time ? new Date(formData.expire_time).toISOString() : null,
